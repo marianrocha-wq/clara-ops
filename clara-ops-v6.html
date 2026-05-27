@@ -1485,7 +1485,8 @@ async function init(){
   renderBreach(allBreaches);
 
   const sync=now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-  set('ftrR','Última sync: '+sync+' · '+rows.length.toLocaleString()+' registros');
+  const currCount=rows.filter(function(r){var p=parseDate(r['Ticket_Date']||'');return p&&p.getMonth()===now.getMonth()&&p.getFullYear()===now.getFullYear();}).length;
+  set('ftrR','Última sync: '+sync+' · '+rows.length.toLocaleString()+' total · '+currCount+' este mes');
 }
 
 async function refresh(){
