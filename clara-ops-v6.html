@@ -576,7 +576,9 @@ function processRows(rawRows){
     // FRAUD - historical
     fTotal:0,fSolved:0,fCancelled:0,fInReview:0,fPending:0,fPendingInfo:0,fRejected:0,
     fAgenteLento:0,fFraudePendOk:0,fFraudeVencido:0,fAg5Ok:0,fAg5Breach:0,
+    fSeg2Ok:0,fSeg2Breach:0,fSeg3Ok:0,fSeg3Breach:0,
     cfTotal:0,cfAgenteLento:0,cfFraudePendOk:0,cfFraudeVencido:0,cfAg5Ok:0,cfAg5Breach:0,
+    cfSeg2Ok:0,cfSeg2Breach:0,cfSeg3Ok:0,cfSeg3Breach:0,
     // FRAUD - current month
     cfTotal:0,cfAgenteLento:0,cfFraudePendOk:0,cfFraudeVencido:0,cfAg5Ok:0,cfAg5Breach:0,
     // REGULAR - historical
@@ -589,7 +591,7 @@ function processRows(rawRows){
 
   const agents={};
   // global fraud
-  const gf={total:0,agenteLento:0,fraudePendOk:0,fraudeVencido:0,ag5Breach:0};
+  const gf={total:0,agenteLento:0,fraudePendOk:0,fraudeVencido:0,ag5Breach:0,fSeg2Breach:0,fSeg3Breach:0};
   // global regular
   const gr={total:0,solved:0,prog:0,s1b:0,s2b:0,s3b:0,docsOk:0,docsBreached:0,authOk:0,authBreached:0};
   // breach list
@@ -685,6 +687,36 @@ function processRows(rawRows){
         }
       }
       // Mirror to current month counters if ticket is from this month
+      // SEG2/SEG3 for IDNTC (same rules as Regular, after Fraude dictaminó)
+      if(isOpen && ticketDate){
+        const bhF=bizHours(ticketDate,now,country);
+        const bdF=Math.floor(bhF/8);
+        // SEG2: procedente/buena_fe_macro + caseId + fechaChbk before day 5
+        if(status==='In review'||status==='Pending info'){
+          const tieneM2=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
+          const tieneSeg2F=tieneM2&&caseId&&fechaChbk;
+          if(bdF>=5&&!tieneSeg2F){
+            ag.fSeg2Breach++;gf.fSeg2Breach++;
+            allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
+              slaName:'FRAUD SEG2',detail:'IDNTC sin procedente al día '+bdF,dias:bdF,severity:'hi',seg:'SEG 2 · Dictamen Procedencia'});
+          } else if(tieneSeg2F) ag.fSeg2Ok++;
+        }
+        // SEG3: abono ≤5d háb from fechaChbk
+        if(fechaChbk&&!esBuenaFe){
+          if(fechaAbono){
+            const bdA=Math.floor(bizHours(fechaChbk,fechaAbono,country)/8);
+            if(bdA<=5)ag.fSeg3Ok++;
+          } else {
+            const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);
+            if(bdA>5){
+              ag.fSeg3Breach++;gf.fSeg3Breach++;
+              allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
+                slaName:'FRAUD SEG3',detail:'IDNTC sin abono · '+bdA+'d desde chbk',dias:bdA,severity:'hi',seg:'SEG 3 · Abono al Cliente'});
+            } else ag.fSeg3Ok++;
+          }
+        }
+      }
+
       if(isCurrMonth){
         ag.cfTotal++;
         if(isOpen){
@@ -827,6 +859,18 @@ function processRows(rawRows){
           const esPendC=validFraude.toLowerCase()==='pending'||validFraude.toLowerCase()==='pendiente';
           if(esPendC&&fechaAlta){const bdF=Math.floor(bizHours(fechaAlta,now,country)/8);if(bdF<=3)ag.cfFraudePendOk++;else ag.cfFraudeVencido++;}
           if(ticketDate){const bd5=Math.floor(bizHours(ticketDate,now,country)/8);const tM=macro&&!macro.toLowerCase().includes('pendiente');if(bd5>=5&&!tM)ag.cfAg5Breach++;else if(tM)ag.cfAg5Ok++;}
+          // SEG2/SEG3 curr for IDNTC
+          if(ticketDate){
+            const bdC=Math.floor(bizHours(ticketDate,now,country)/8);
+            if(status==='In review'||status==='Pending info'){
+              const tM2=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
+              if(bdC>=5&&!(tM2&&caseId&&fechaChbk))ag.cfSeg2Breach++;else if(tM2&&caseId&&fechaChbk)ag.cfSeg2Ok++;
+            }
+            if(fechaChbk&&!esBuenaFe){
+              const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);
+              if(bdA>5)ag.cfSeg3Breach++;else ag.cfSeg3Ok++;
+            }
+          }
         }
       }
     }
@@ -1105,6 +1149,10 @@ function renderFraudCards(agents,mode){
     var aOk=fTot-fLento,aP=fTot>0?pct(aOk,fTot):100,aCls=aP>=80?'ok':aP>=50?'warn':'breach';
     var fTotB=fPendOk+fVenc,fCls=fVenc>0?'breach':fPendOk>0?'warn':'neutral';
     var dTot=fAg5Ok+fAg5B,dP=dTot>0?pct(fAg5Ok,dTot):100,dCls=fAg5B>0?'breach':dTot>0?'ok':'neutral';
+    var fSeg2Ok=isCurr?ag.cfSeg2Ok:ag.fSeg2Ok,fSeg2Breach=isCurr?ag.cfSeg2Breach:ag.fSeg2Breach;
+    var fSeg3Ok=isCurr?ag.cfSeg3Ok:ag.fSeg3Ok,fSeg3Breach=isCurr?ag.cfSeg3Breach:ag.fSeg3Breach;
+    var fSeg2T=fSeg2Ok+fSeg2Breach,fS2p=fSeg2T>0?pct(fSeg2Ok,fSeg2T):100;
+    var fSeg3T=fSeg3Ok+fSeg3Breach,fS3p=fSeg3T>0?pct(fSeg3Ok,fSeg3T):100;
     var totalAlert=fLento+fVenc+fAg5B,cardBorder=totalAlert>0?'border-color:var(--red-b);':'';
     var periodLabel=isCurr?'MES ACTUAL':'HISTÓRICO 2026';
     return '<div class="fcard" style="'+cardBorder+'">'
@@ -1134,6 +1182,19 @@ function renderFraudCards(agents,mode){
           +'<div class="fsla-nums"><span class="go">✓ '+n(fAg5Ok)+' ejecutados</span><span class="'+(fAg5B>0?'hi':'')+'">✗ '+n(fAg5B)+' pendientes</span></div>'
           +'<div class="fsla-sub">Ticket_Date día 5 → macro aplicada aunque Fraude tarde</div>'
         +'</div>'
+        +(fSeg2T>0||fSeg3T>0?
+          '<div style="margin-top:6px;padding:8px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--b1);">'
+          +'<div style="font-family:var(--fm);font-size:9px;color:var(--td);letter-spacing:.06em;margin-bottom:7px;">POST-DICTAMEN · CHARGEBACK</div>'
+          +('<div class="seg-row"><span class="seg-name">SEG 2 · Procedencia</span>'
+            +'<div class="seg-bar-wrap"><div class="seg-bar-fill" style="width:'+Math.max(fS2p,2)+'%;background:'+(fSeg2Breach>0?'var(--red)':'var(--green)')+'"></div></div>'
+            +'<span class="seg-pct" style="color:'+(fSeg2Breach>0?'var(--red)':'var(--green)')+';">'+(fSeg2T>0?fS2p+'%':'—')+'</span>'
+            +'<span class="seg-breach" style="color:'+(fSeg2Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg2Breach>0?'✗ '+fSeg2Breach:' ✓')+'</span></div>')
+          +('<div class="seg-row"><span class="seg-name">SEG 3 · Abono</span>'
+            +'<div class="seg-bar-wrap"><div class="seg-bar-fill" style="width:'+Math.max(fS3p,2)+'%;background:'+(fSeg3Breach>0?'var(--red)':'var(--cyan)')+'"></div></div>'
+            +'<span class="seg-pct" style="color:'+(fSeg3Breach>0?'var(--red)':'var(--cyan)')+';">'+(fSeg3T>0?fS3p+'%':'—')+'</span>'
+            +'<span class="seg-breach" style="color:'+(fSeg3Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg3Breach>0?'✗ '+fSeg3Breach:' ✓')+'</span></div>')
+          +'</div>'
+        :'')
       +'</div>'
     +'</div>';
   }).join('');
