@@ -746,14 +746,14 @@ function processRows(rawRows){
 
       if(isOpen){gr.prog++;}
 
+      // Buena Fe = abono se aplica al final, no es breach de abono
+      const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena')
+        || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena')
+        || (r['Macro']||'').toLowerCase().includes('buena_fe_macro');
+
       if(ticketDate){
         const bhT=bizHours(ticketDate,now,country);
         const bdT=Math.floor(bhT/8);
-
-        // Buena Fe = abono se aplica al final, no es breach de abono
-        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena')
-          || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena')
-          || (r['Macro']||'').toLowerCase().includes('buena_fe_macro');
 
         // Skip SEG 1/2/3 measurement for docs-pending and auth-in-process
         if(!isDoc && !isAuth){
