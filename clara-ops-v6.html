@@ -600,6 +600,7 @@ function processRows(rawRows){
     const country       = normCountry(r['Country']||'');
     const agent         = (r['Responsable']||'').trim()||'Sin asignar';
     const ticketDate    = parseDate(r['Ticket_Date']||'');
+    const ticketDateRaw = r['Ticket_Date']||'';
     const claimType     = r['claim_Type']||r['Claim_Type']||'';
     const macro         = (r['Macro']||'').trim();
     const arn           = (r['ARN']||'').trim();
