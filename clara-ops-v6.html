@@ -640,7 +640,15 @@ function processRows(rawRows){
         //    Solo si ya tiene Fecha Alta registrada
         if(fechaAlta&&ticketDate){
           const bhS=bizHours(ticketDate,fechaAlta,country);
-          if(bhS>24){ag.fAgenteLento++;gf.agenteLento++;}
+          if(bhS>24){
+            ag.fAgenteLento++;gf.agenteLento++;
+            allBreaches.push({ticketId,agent,country,claimType,status,
+              ticketDate:ticketDateRaw,
+              slaName:'FRAUD SUBIDA TARDIA',
+              detail:'Tardó '+Math.round(bhS)+'h háb. en subir a Fraude',
+              dias:Math.floor(bhS/8),severity:'md',
+              seg:'Fraud-A · Subida a Fraude'});
+          }
         }
 
         // 2. Fraude vencido vs pendiente OK
@@ -934,7 +942,7 @@ function renderGeneral(agents, gf, gr, allBreaches){
   const ALERT_SLA_MAP = {
     'SLA-1 BREACH':'SLA-1 PENDING','SEG 2 BREACH':'SEG 2 DÍA 5',
     'SEG 3 BREACH':'SEG 3 ABONO','FRAUD VENCIDO':'FRAUDE >3d',
-    'FRAUD · AGENTE DÍA 5':'AGENTE DÍA 5','FRAUD · SUBIDA TARDÍA':'',
+    'FRAUD · AGENTE DÍA 5':'AGENTE DÍA 5','FRAUD · SUBIDA TARDÍA':'FRAUD SUBIDA TARDIA',
   };
   if(!alertDefs.length){
     alertStrip.style.background='var(--green-d)';
@@ -1022,7 +1030,7 @@ function renderGeneral(agents, gf, gr, allBreaches){
     if(ag.rSeg3Breach>0)    alertParts.push({lbl:'S3',     val:ag.rSeg3Breach,    sla:'SEG 3 ABONO'});
     if(ag.fFraudeVencido>0) alertParts.push({lbl:'Fraud-B',val:ag.fFraudeVencido, sla:'FRAUDE >3d'});
     if(ag.fAg5Breach>0)     alertParts.push({lbl:'Fraud-C',val:ag.fAg5Breach,     sla:'AGENTE DÍA 5'});
-    if(ag.fAgenteLento>0)   alertParts.push({lbl:'Fraud-A',val:ag.fAgenteLento,   sla:''});
+    if(ag.fAgenteLento>0)   alertParts.push({lbl:'Fraud-A',val:ag.fAgenteLento,   sla:'FRAUD SUBIDA TARDIA'});
 
     var alertHtml = alertParts.length > 0
       ? alertParts.map(function(a){
@@ -1370,7 +1378,7 @@ function showGlobalAlert(rid){
   var rows = cases.map(function(b){
     var sc = segColor(b.seg||'');
     return '<div style="'+COLS2+'display:grid;padding:8px 16px;border-bottom:1px solid var(--b1);align-items:center;">'
-      +'<div style="font-family:var(--fm);font-size:10px;color:var(--blue);">'+(b.ticketId||'—').slice(0,20)+'</div>'
+      +'<div style="font-family:var(--fm);font-size:9px;color:var(--blue);word-break:break-all;line-height:1.3;">'+(b.ticketId||'—')+'</div>'
       +'<div style="font-size:11px;color:var(--tx)">'+(b.agent||'—')+'</div>'
       +'<div style="font-family:var(--fm);font-size:10px;color:var(--tm)">'+(b.country||'—')+'</div>'
       +'<div style="font-family:var(--fm);font-size:10px;color:var(--td)">'+(b.ticketDate||'—')+'</div>'
@@ -1431,7 +1439,7 @@ function showAlertDetail(rid){
   var rows = cases.map(function(b){
     var sc = segColor(b.seg||'');
     return '<div style="'+COLS2+'display:grid;padding:8px 16px;border-bottom:1px solid var(--b1);align-items:center;font-size:11px;">'
-      +'<div style="font-family:var(--fm);font-size:10px;color:var(--blue);">'+(b.ticketId||'—').slice(0,20)+'</div>'
+      +'<div style="font-family:var(--fm);font-size:9px;color:var(--blue);word-break:break-all;line-height:1.3;">'+(b.ticketId||'—')+'</div>'
       +'<div style="font-family:var(--fm);font-size:10px;color:var(--tm)">'+(b.country||'—')+'</div>'
       +'<div style="font-family:var(--fm);font-size:10px;color:var(--td)">'+(b.ticketDate||'—')+'</div>'
       +'<div><span style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;border:1px solid;color:'+sc+';border-color:'+sc+';background:rgba(0,0,0,.2);">'+(b.seg||'—')+'</span></div>'
