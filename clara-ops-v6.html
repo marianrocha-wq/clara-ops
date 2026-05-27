@@ -659,7 +659,10 @@ function processRows(rawRows){
     const isAuth  = isAuthMacro(macro);
     const esBuenaFe = (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena fe')
       || (macro||'').toLowerCase().includes('buena_fe_macro');
-    const isIDNTC    = FRAUD_TYPES.has(claimType.toLowerCase().trim());
+    const claimTypeLow = claimType.toLowerCase().trim();
+    const isIDNTC    = FRAUD_TYPES.has(claimTypeLow)
+      || claimTypeLow.includes('do not recognize')
+      || claimTypeLow.includes('no reconozco');
     const isCurrMonth = ticketDate && ticketDate.getMonth()===now.getMonth() && ticketDate.getFullYear()===now.getFullYear();
 
     // ── FRAUDE ────────────────────────────────────────────────
@@ -1200,7 +1203,7 @@ function renderFraudCards(agents,mode){
       +'<div class="fcard-top">'
         +'<div class="fcard-av '+c+'">'+initials+'</div>'
         +'<div class="fcard-info"><div class="fcard-name">'+ag.name+'</div>'
-        +'<div class="fcard-meta">'+f+' '+ag.country+' · IDNTC · '+(totalAlert>0?'⚠ '+totalAlert+' alertas':'✓ Sin alertas')+'</div></div>'
+        +'<div class="fcard-meta">'+f+' '+ag.country+' · IDNTC · '+(totalAlert>0?'⚠ '+totalAlert+' alertas':'✓ Sin alertas')+' · cf:'+n(ag.cfTotal||0)+'</div></div>'
         +'<div><div class="fcard-total" style="color:var(--purple)">'+n(fTot)+'</div>'
         +'<div class="fcard-total-lbl" style="color:'+(isCurr?'var(--accent)':'var(--td)')+'">'+periodLabel+'</div></div>'
       +'</div>'
@@ -1301,7 +1304,7 @@ function renderRegularCards(agents,mode){
       +'<div class="rcard-top">'
         +'<div class="fcard-av '+c+'">'+initials+'</div>'
         +'<div class="fcard-info"><div class="fcard-name">'+ag.name+'</div>'
-        +'<div class="fcard-meta">'+f+' '+ag.country+' · '+n(rTotal)+' claims · '+resP+'% resolución</div></div>'
+        +'<div class="fcard-meta">'+f+' '+ag.country+' · '+n(rTotal)+' claims · cr:'+n(ag.crTotal||0)+'</div></div>'
         +'<div><div class="fcard-total" style="color:'+(totalBreaches>0?'var(--red)':'var(--green)')+';">'+(totalBreaches>0?totalBreaches:resP+'%')+'</div>'
         +'<div class="fcard-total-lbl" style="color:'+(isCurr?'var(--accent)':'var(--td)')+';">'+periodLabel+'</div></div>'
       +'</div>'
@@ -1492,7 +1495,9 @@ async function init(){
 
   const sync=now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   const currCount=rows.filter(function(r){var p=parseDate(r['Ticket_Date']||'');return p&&p.getMonth()===now.getMonth()&&p.getFullYear()===now.getFullYear();}).length;
-  set('ftrR','Última sync: '+sync+' · '+rows.length.toLocaleString()+' total · '+currCount+' este mes');
+  // Sample first date to diagnose format
+  var sampleDate = rows.length>0 ? (rows[rows.length-1]['Ticket_Date']||'sin fecha') : 'sin datos';
+  set('ftrR','Última sync: '+sync+' · '+rows.length.toLocaleString()+' total · '+currCount+' este mes · última fecha: '+sampleDate);
 }
 
 async function refresh(){
