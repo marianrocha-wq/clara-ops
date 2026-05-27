@@ -750,6 +750,11 @@ function processRows(rawRows){
         const bhT=bizHours(ticketDate,now,country);
         const bdT=Math.floor(bhT/8);
 
+        // Buena Fe = abono se aplica al final, no es breach de abono
+        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena')
+          || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena')
+          || (r['Macro']||'').toLowerCase().includes('buena_fe_macro');
+
         // Skip SEG 1/2/3 measurement for docs-pending and auth-in-process
         if(!isDoc && !isAuth){
 
@@ -791,10 +796,6 @@ function processRows(rawRows){
         // Seg3: Fecha contracargo existe
         // - Si tiene fechaAbono → ciclo completo, medir si llegó a tiempo (histórico, no alertar)
         // - Si NO tiene fechaAbono + caso abierto → pendiente de abono, medir días transcurridos
-        // Buena fe = abono se aplica al final del proceso, no es pendiente de abono
-        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena')
-          || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena')
-          || (r['Macro']||'').toLowerCase().includes('buena_fe_macro');
         if(fechaChbk && !esBuenaFe){
           if(fechaAbono){
             // Ciclo completo — solo registrar si fue a tiempo o no, sin breach activo
