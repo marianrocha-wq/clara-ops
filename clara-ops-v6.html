@@ -297,26 +297,44 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fb);font-size:13px;l
   <div id="tab-general">
 
     <!-- Hero KPIs -->
-    <div class="gen-hero">
-      <div class="gen-kpi total">
-        <div class="gen-kpi-lbl">Total Claims 2026</div>
-        <div class="gen-kpi-val" id="g-total">—</div>
-        <div class="gen-kpi-sub" id="g-total-sub">MX · CO · BR</div>
+    <div class="gen-hero" style="grid-template-columns:repeat(4,1fr);">
+      <div class="gen-kpi total"><div class="gen-kpi-lbl">Total Claims 2026</div><div class="gen-kpi-val" id="g-total">—</div><div class="gen-kpi-sub" id="g-total-sub">MX · CO · BR</div></div>
+      <div class="gen-kpi solved"><div class="gen-kpi-lbl">Resueltos</div><div class="gen-kpi-val" style="color:var(--green)" id="g-solved">—</div><div class="gen-kpi-sub"><b id="g-solved-pct">—</b> tasa de resolución</div></div>
+      <div class="gen-kpi breach"><div class="gen-kpi-lbl">Total Breaches Activos</div><div class="gen-kpi-val" style="color:var(--red)" id="g-breach">—</div><div class="gen-kpi-sub">Casos fuera de SLA ahora</div></div>
+      <div class="gen-kpi fraud"><div class="gen-kpi-lbl">IDNTC · Fraud</div><div class="gen-kpi-val" style="color:var(--purple)" id="g-idntc">—</div><div class="gen-kpi-sub"><b id="g-idntc-breach" style="color:var(--red)">—</b> fuera de garantía</div></div>
+    </div>
+    <div style="height:8px;"></div>
+    <div style="background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:12px 16px;">
+      <div style="font-family:var(--fm);font-size:9px;color:var(--td);letter-spacing:.08em;margin-bottom:10px;">📋 CLAIMS REGULARES · STATUS</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">TOTAL</div><div class="kpi-val" style="font-size:20px;" id="g-rk-total">—</div></div>
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">SOLVED</div><div class="kpi-val" style="font-size:20px;color:var(--green)" id="g-rk-solved">—</div><div class="kpi-sub g" id="g-rk-solved-pct">—</div></div>
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">CANCELLED</div><div class="kpi-val" style="font-size:20px;color:var(--tm)" id="g-rk-cancelled">—</div></div>
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">PENDING</div><div class="kpi-val" style="font-size:20px;color:var(--amber)" id="g-rk-pending">—</div></div>
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">IN REVIEW</div><div class="kpi-val" style="font-size:20px;color:var(--blue)" id="g-rk-inreview">—</div></div>
+        <div class="kpi" style="padding:10px 12px;"><div class="kpi-lbl">PEND. INFO</div><div class="kpi-val" style="font-size:20px;color:var(--amber)" id="g-rk-pendinfo">—</div></div>
       </div>
-      <div class="gen-kpi solved">
-        <div class="gen-kpi-lbl">Resueltos</div>
-        <div class="gen-kpi-val" style="color:var(--green)" id="g-solved">—</div>
-        <div class="gen-kpi-sub"><b id="g-solved-pct">—</b> tasa de resolución</div>
+    </div>
+    <div style="height:6px;"></div>
+    <div style="background:var(--s1);border:1px solid var(--purple-b);border-radius:10px;padding:12px 16px;">
+      <div style="font-family:var(--fm);font-size:9px;color:var(--purple);letter-spacing:.08em;margin-bottom:10px;">🔍 FRAUD · IDNTC · STATUS</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;">
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">TOTAL</div><div class="kpi-val" style="font-size:20px;color:var(--purple)" id="g-fk-total">—</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">SOLVED</div><div class="kpi-val" style="font-size:20px;color:var(--green)" id="g-fk-solved">—</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">CANCELLED</div><div class="kpi-val" style="font-size:20px;color:var(--tm)" id="g-fk-cancelled">—</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">PENDING</div><div class="kpi-val" style="font-size:20px;color:var(--amber)" id="g-fk-pending">—</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">IN REVIEW</div><div class="kpi-val" style="font-size:20px;color:var(--blue)" id="g-fk-inreview">—</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--purple-b);"><div class="kpi-lbl">FRAUD VENCIDO</div><div class="kpi-val" style="font-size:20px;color:var(--red)" id="g-fk-vencido">—</div></div>
       </div>
-      <div class="gen-kpi breach">
-        <div class="gen-kpi-lbl">Total Breaches Activos</div>
-        <div class="gen-kpi-val" style="color:var(--red)" id="g-breach">—</div>
-        <div class="gen-kpi-sub">Casos fuera de SLA ahora</div>
-      </div>
-      <div class="gen-kpi fraud">
-        <div class="gen-kpi-lbl">IDNTC · Fraude</div>
-        <div class="gen-kpi-val" style="color:var(--purple)" id="g-idntc">—</div>
-        <div class="gen-kpi-sub"><b id="g-idntc-breach" style="color:var(--red)">—</b> fuera de garantía</div>
+    </div>
+    <div style="height:6px;"></div>
+    <div style="background:var(--s1);border:1px solid var(--amber-b);border-radius:10px;padding:12px 16px;">
+      <div style="font-family:var(--fm);font-size:9px;color:var(--amber);letter-spacing:.08em;margin-bottom:10px;">⏳ CASOS EN ESPERA · No cuentan como breach de SEG 1/2/3</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div class="kpi" style="padding:10px 12px;border-color:var(--amber-b);"><div class="kpi-lbl">DOCS OK</div><div class="kpi-val" style="font-size:20px;color:var(--green)" id="g-docs-ok">—</div><div class="kpi-sub">En tiempo (&lt;20d)</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--red-b);"><div class="kpi-lbl">DOCS VENCIDOS</div><div class="kpi-val" style="font-size:20px;color:var(--red)" id="g-docs-breach">—</div><div class="kpi-sub r">&gt;20d sin docs del cliente</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--amber-b);"><div class="kpi-lbl">AUTH EN TIEMPO</div><div class="kpi-val" style="font-size:20px;color:var(--green)" id="g-auth-ok">—</div><div class="kpi-sub">En proceso (&lt;7d)</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--red-b);"><div class="kpi-lbl">AUTH VENCIDA</div><div class="kpi-val" style="font-size:20px;color:var(--red)" id="g-auth-breach">—</div><div class="kpi-sub r">&gt;7d desde fecha transacción</div></div>
       </div>
     </div>
 
@@ -907,6 +925,23 @@ function renderGeneral(agents, gf, gr, allBreaches){
   set('g-idntc', n(gf.total));
   set('g-idntc-breach', n(gf.fraudeVencido + gf.ag5Breach));
   set('tc-general', n(total));
+  set('g-rk-total',     n(gr.total));
+  set('g-rk-solved',    n(solved));
+  set('g-rk-solved-pct',pct(solved,gr.total)+'%');
+  set('g-rk-cancelled', n(cancelled));
+  set('g-rk-pending',   n(pending));
+  set('g-rk-inreview',  n(inReview));
+  set('g-rk-pendinfo',  n(pendInfo));
+  set('g-fk-total',    n(gf.total));
+  set('g-fk-solved',   n(Object.values(agents).reduce(function(s,a){return s+a.fSolved;},0)));
+  set('g-fk-cancelled',n(Object.values(agents).reduce(function(s,a){return s+a.fCancelled;},0)));
+  set('g-fk-pending',  n(Object.values(agents).reduce(function(s,a){return s+a.fPending;},0)));
+  set('g-fk-inreview', n(Object.values(agents).reduce(function(s,a){return s+a.fInReview;},0)));
+  set('g-fk-vencido',  n(gf.fraudeVencido));
+  set('g-docs-ok',     n(gr.docsOk));
+  set('g-docs-breach', n(gr.docsBreached));
+  set('g-auth-ok',     n(gr.authOk));
+  set('g-auth-breach', n(gr.authBreached));
 
   // SLA overview rows
   const slaRows = [
