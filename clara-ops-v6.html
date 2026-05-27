@@ -724,11 +724,12 @@ function processRows(rawRows){
 
         // Seg2: solo casos abiertos (In review / Pending info activos)
         if((status==='In review'||status==='Pending info')&&isOpen){
-          const tieneSeg2=macro.toLowerCase().includes('procedente')&&caseId&&fechaChbk;
+          const tieneMarcoSeg2=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
+          const tieneSeg2=tieneMarcoSeg2&&caseId&&fechaChbk;
           if(bdT>=5&&!tieneSeg2){
             ag.rSeg2Breach++;gr.s2b++;
             const falta=[];
-            if(!macro.toLowerCase().includes('procedente'))falta.push('macro procedente');
+            if(!tieneMarcoSeg2)falta.push('macro procedente/buena_fe');
             if(!caseId)falta.push('Case ID');
             if(!fechaChbk)falta.push('Fecha chbk');
             allBreaches.push({ticketId,agent,country,claimType,status,
@@ -741,7 +742,9 @@ function processRows(rawRows){
         // - Si tiene fechaAbono → ciclo completo, medir si llegó a tiempo (histórico, no alertar)
         // - Si NO tiene fechaAbono + caso abierto → pendiente de abono, medir días transcurridos
         // Buena fe = abono se aplica al final del proceso, no es pendiente de abono
-        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena') || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena');
+        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena')
+          || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena')
+          || (r['Macro']||'').toLowerCase().includes('buena_fe_macro');
         if(fechaChbk && !esBuenaFe){
           if(fechaAbono){
             // Ciclo completo — solo registrar si fue a tiempo o no, sin breach activo
@@ -1287,7 +1290,7 @@ function renderBreach(allBreaches){
     byAgent[a].cases.push(b);
   });
 
-  const COLS = 'grid-template-columns:110px 80px 100px 160px 90px 90px 1fr;';
+  const COLS = 'grid-template-columns:200px 80px 100px 160px 90px 90px 1fr;';
   const THEAD = '<div style="'+COLS+'display:grid;padding:7px 14px;background:var(--s3);border-bottom:1px solid var(--b1);">'
     +'<div class="th">Ticket ID</div>'
     +'<div class="th">País</div>'
@@ -1312,7 +1315,7 @@ function renderBreach(allBreaches){
       const rows = ag.cases.slice(0,100).map((b,i)=>{
         const sc = segColor(b.seg||'');
         return '<div class="btable-row '+(b.severity==='hi'?'crit':'')+'" style="'+COLS+'display:grid;align-items:center;">'
-          +'<div class="td-mono" style="color:var(--blue);font-size:10px;">'+(b.ticketId||'—').slice(0,16)+'</div>'
+          +'<div style="font-family:var(--fm);font-size:9px;color:var(--blue);word-break:break-all;">'+(b.ticketId||'—')+'</div>'
           +'<div class="td-mono" style="color:var(--tm)">'+(b.country||'—')+'</div>'
           +'<div class="td-mono" style="font-size:10px;color:var(--td)">'+(b.ticketDate||'—')+'</div>'
           +'<div><span style="font-family:var(--fm);font-size:9px;padding:2px 7px;border-radius:4px;border:1px solid;background:rgba(0,0,0,.2);color:'+sc+';border-color:'+sc+';white-space:nowrap;">'+(b.seg||'—')+'</span></div>'
