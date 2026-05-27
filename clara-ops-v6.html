@@ -1755,21 +1755,18 @@ function renderFraudCards(agents, mode){
         +'</div>'
       +'</div>'
       +'<div class="fcard-slas">'
-        // SLA A
         +'<div class="fsla '+aCls+'">'
           +'<div class="fsla-hd"><span class="fsla-title '+aCls+'">⏱ A · SUBIMOS A FRAUDE ≤ 24H HÁB.</span><span class="fsla-badge '+aCls+'">'+aP+'%</span></div>'
           +'<div class="fsla-bar"><div class="fsla-bar-fill" style="width:'+Math.max(aP,2)+'%;background:'+(aCls==='ok'?'var(--green)':aCls==='warn'?'var(--amber)':'var(--red)')+'"></div></div>'
           +'<div class="fsla-nums"><span class="go">✓ '+n(aOk)+' en tiempo</span><span class="'+(fLento>0?'hi':'')+'">✗ '+n(fLento)+' tardíos</span><span>'+n(fTot)+' total</span></div>'
           +'<div class="fsla-sub">Ticket_Date → Fecha Alta claims</div>'
         +'</div>'
-        // SLA B
         +'<div class="fsla '+fCls+'">'
           +'<div class="fsla-hd"><span class="fsla-title '+fCls+'">🔍 B · FRAUDE DICTAMINA ≤ 3D HÁB.</span><span class="fsla-badge '+fCls+'">'+(fVenc>0?fVenc+' vencidos':fPendOk>0?fPendOk+' pend.':'✓ OK')+'</span></div>'
           +'<div class="fsla-bar"><div class="fsla-bar-fill" style="width:'+(fVenc>0?Math.min(100,fVenc*10):fPendOk>0?40:0)+'%;background:'+(fVenc>0?'var(--red)':'var(--amber)')+'"></div></div>'
           +'<div class="fsla-nums"><span class="'+(fVenc>0?'hi':'')+'">Vencidos: '+n(fVenc)+'</span><span class="'+(fPendOk>0?'':'go')+'">Pendientes: '+n(fPendOk)+'</span></div>'
           +'<div class="fsla-sub">Fecha Alta → dictamen · responsabilidad: Fraude</div>'
         +'</div>'
-        // SLA C
         +'<div class="fsla '+dCls+'">'
           +'<div class="fsla-hd"><span class="fsla-title '+dCls+'">📋 C · EJECUTAMOS MACRO ANTES DÍA 5</span><span class="fsla-badge '+dCls+'">'+dP+'%</span></div>'
           +'<div class="fsla-bar"><div class="fsla-bar-fill" style="width:'+Math.max(dP,2)+'%;background:'+(dCls==='ok'?'var(--green)':'var(--red)')+'"></div></div>'
