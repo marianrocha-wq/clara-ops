@@ -681,7 +681,9 @@ function processRows(rawRows){
     const reallyClosed = ['solved','cancelled','rejected'].includes(status.toLowerCase())
       || resolucion2 === 'won' || resolucion2 === 'lost'
       || resolucion1 === 'lost';
-    const isOpen  = !reallyClosed;
+    // Second Check = waiting for Fraude second dictamen, not agent's action
+    const isSecondCheck = status.toLowerCase().trim() === 'second check';
+    const isOpen  = !reallyClosed && !isSecondCheck;
     const isDoc   = isDocMacro(macro);
     const isAuth  = isAuthMacro(macro);
     const esBuenaFe = (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena fe')
@@ -1430,7 +1432,7 @@ function renderBreach(allBreaches){
     byAgent[a].cases.push(b);
   });
 
-  const COLS = 'grid-template-columns:150px 50px 90px 185px 120px 50px 1fr;';
+  const COLS = 'grid-template-columns:280px 50px 90px 160px 110px 45px 1fr;';
   const THEAD = '<div style="'+COLS+'display:grid;padding:7px 14px;background:var(--s3);border-bottom:1px solid var(--b1);">'
     +'<div class="th">Ticket ID</div>'
     +'<div class="th">País</div>'
@@ -1482,6 +1484,75 @@ function renderBreach(allBreaches){
         +(ag.cases.length>100?'<div class="empty-state" style="padding:8px;">Mostrando 100 de '+ag.cases.length+'</div>':'')
       +'</div>';
     }).join('');
+}
+
+// ════════════════════════════════════════
+// BREACH DETAIL MODALS
+// ════════════════════════════════════════
+var _alertRegistry2 = {};
+function showAlertDetail(rid){
+  var reg = _alertRegistry2[rid];
+  if(!reg) return;
+  var cases = (window._breachData||[]).filter(function(b){
+    return b.agent===reg.agent && (!reg.sla||b.slaName===reg.sla);
+  });
+  _showBreachModal(reg.agent+' · '+reg.lbl, cases.length+' tickets fuera de SLA', cases);
+}
+function showGlobalAlert(rid){
+  var reg = _alertRegistry2[rid];
+  if(!reg) return;
+  var cases = (window._breachData||[]).filter(function(b){
+    return !reg.sla || b.slaName===reg.sla;
+  });
+  _showBreachModal(reg.lbl, cases.length+' tickets · todos los agentes', cases);
+}
+function _showBreachModal(title, subtitle, cases){
+  var existing = document.getElementById('breach-modal-overlay');
+  if(existing) existing.remove();
+  var COLS = 'grid-template-columns:220px 110px 50px 90px 160px 110px 45px 1fr;';
+  var segColor = function(s){
+    if(!s) return 'var(--td)';
+    if(s.indexOf('SEG 1')>=0) return 'var(--blue)';
+    if(s.indexOf('SEG 2')>=0) return 'var(--amber)';
+    if(s.indexOf('SEG 3')>=0&&s.indexOf('✓')>=0) return 'var(--green)';
+    if(s.indexOf('SEG 3')>=0) return 'var(--cyan)';
+    if(s.indexOf('Fraud-B')>=0||s.indexOf('FRAUD')>=0) return 'var(--red)';
+    if(s.indexOf('Fraud-C')>=0) return 'var(--purple)';
+    return 'var(--td)';
+  };
+  var rows = cases.slice(0,200).map(function(b){
+    var sc = segColor(b.seg||'');
+    return '<div style="'+COLS+'display:grid;padding:7px 16px;border-bottom:1px solid var(--b1);align-items:center;font-size:11px;">'
+      +'<div style="font-family:var(--fm);font-size:9px;color:var(--blue);word-break:break-all;">'+(b.ticketId||'—')+'</div>'
+      +'<div style="font-size:11px;color:var(--tx)">'+(b.agent||'—')+'</div>'
+      +'<div style="font-family:var(--fm);font-size:10px;color:var(--tm)">'+(b.country||'—')+'</div>'
+      +'<div style="font-family:var(--fm);font-size:9px;color:var(--td)">'+(b.ticketDate||'—')+'</div>'
+      +'<div><span style="font-family:var(--fm);font-size:8px;padding:2px 5px;border-radius:4px;border:1px solid;color:'+sc+';border-color:'+sc+';background:rgba(0,0,0,.2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;display:inline-block;">'+(b.seg||'—')+'</span></div>'
+      +'<div><span style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);white-space:nowrap;">'+(b.slaName||'—')+'</span></div>'
+      +'<div style="font-family:var(--fm);font-size:11px;color:var(--red);">'+(b.dias||'—')+'d</div>'
+      +'<div style="font-family:var(--fm);font-size:10px;color:var(--tm)">'+(b.detail||'—')+'</div>'
+    +'</div>';
+  }).join('');
+  var overlay = document.createElement('div');
+  overlay.id = 'breach-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '<div style="background:var(--s1);border:1px solid var(--b2);border-radius:14px;width:100%;max-width:1100px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--b1);">'
+      +'<div><div style="font-family:var(--fh);font-size:15px;font-weight:700;">'+title+'</div>'
+      +'<div style="font-family:var(--fm);font-size:10px;color:var(--tm);margin-top:2px;">'+subtitle+'</div></div>'
+      +'<button id="bm-close" style="background:var(--s2);border:1px solid var(--b2);color:var(--tm);font-size:12px;width:28px;height:28px;border-radius:6px;cursor:pointer;flex-shrink:0;">✕</button>'
+    +'</div>'
+    +'<div style="'+COLS+'display:grid;padding:6px 16px;background:var(--s2);border-bottom:1px solid var(--b1);">'
+      +'<div class="th">Ticket ID</div><div class="th">Agente</div><div class="th">País</div>'
+      +'<div class="th">Fecha</div><div class="th">Segmento</div><div class="th">SLA</div>'
+      +'<div class="th">Días</div><div class="th">Detalle</div>'
+    +'</div>'
+    +'<div style="overflow-y:auto;">'+rows+(cases.length>200?'<div style="padding:10px;text-align:center;font-family:var(--fm);font-size:10px;color:var(--td);">Mostrando 200 de '+cases.length+'</div>':'')+'</div>'
+  +'</div>';
+  overlay.onclick = function(e){ if(e.target===overlay){ overlay.remove(); document.body.style.overflow=''; } };
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  document.getElementById('bm-close').onclick = function(){ overlay.remove(); document.body.style.overflow=''; };
 }
 
 // ════════════════════════════════════════
