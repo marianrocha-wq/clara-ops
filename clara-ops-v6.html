@@ -1242,13 +1242,13 @@ function renderFraudCards(agents,mode){
     var fInfoPend=isCurr?0:(ag.fInfoPend||0);
     var fSeg2T=fSeg2Ok+fSeg2Breach,fS2p=fSeg2T>0?pct(fSeg2Ok,fSeg2T):100;
     var fSeg3T=fSeg3Ok+fSeg3Breach,fS3p=fSeg3T>0?pct(fSeg3Ok,fSeg3T):100;
-    var totalAlert=fLento+fVenc+fAg5B,cardBorder=totalAlert>0?'border-color:var(--red-b);':'';
+    var totalAlert=fLento+fVenc+fAg5B+(fNFOpen||0),cardBorder=totalAlert>0?'border-color:var(--red-b);':'';
     var periodLabel=isCurr?'MES ACTUAL':'HISTÓRICO 2026';
     return '<div class="fcard" style="'+cardBorder+'">'
       +'<div class="fcard-top">'
         +'<div class="fcard-av '+c+'">'+initials+'</div>'
         +'<div class="fcard-info"><div class="fcard-name">'+ag.name+'</div>'
-        +'<div class="fcard-meta">'+f+' '+ag.country+' · IDNTC · '+(totalAlert>0?'⚠ '+totalAlert+' alertas':'✓ Sin alertas')+'</div></div>'
+        +'<div class="fcard-meta">'+f+' '+ag.country+' · IDNTC · '+(totalAlert>0?'⚠ '+totalAlert+' alertas':'✓ Sin alertas')+' [S2:'+n(fSeg2T)+' NF:'+n(fNFOpen)+']'+'</div></div>'
         +'<div><div class="fcard-total" style="color:var(--purple)">'+n(fTot)+'</div>'
         +'<div class="fcard-total-lbl" style="color:'+(isCurr?'var(--accent)':'var(--td)')+'">'+periodLabel+'</div></div>'
       +'</div>'
