@@ -491,6 +491,23 @@ const SHEET_NAME = 'Global chargebacks tracking 2026';
 const AUTO_MS    = 5 * 60 * 1000;
 
 const FRAUD_TYPES = new Set(['i do not recognize the charges','idntc','fraud','fraude','no reconozco el cargo']);
+// Validacion Fraude dictamen values
+const FRAUDE_CONFIRMADO = ['card not present fraud','stolen fraud','account takeover fraud',
+  'without pin','card lost','scam'];
+const FRAUDE_NO_FRAUDE  = ['nf - history','nf - subscription','nf - tokenization',
+  'nf - in-person transaction','nf - in-person chip + pin transaction',
+  'nf - in-person contactless + pin transaction','nf - no pattern of fraud',
+  'nf - account activity','nf - wallet','nf - 3ds','nf - client recognizes trx'];
+const FRAUDE_MAS_INFO   = ['context','good faith'];
+function dictamenType(v){
+  var l=(v||'').toLowerCase().trim();
+  if(!l||l==='pending'||l==='pendiente') return 'pending';
+  if(FRAUDE_CONFIRMADO.some(function(x){return l.includes(x);})) return 'confirmed';
+  if(FRAUDE_NO_FRAUDE.some(function(x){return l===x||l.includes(x);})) return 'nf';
+  if(FRAUDE_MAS_INFO.some(function(x){return l.includes(x);})) return 'info';
+  return 'other';
+}
+
 const DOC_MACROS=['documentacion_chargebacks_macro','recordatorio_documentacion_macro','co_documentacion_servicio_no_prestado','documentacion_servicio_no_prestado','co_documentacion_chargebacks_macro'];
 function isDocMacro(m){var l=(m||'').toLowerCase();return DOC_MACROS.some(function(d){return l.includes(d);});}
 function isAuthMacro(m){return(m||'').toLowerCase().includes('en_proceso_autorizacion_macro');}
@@ -601,8 +618,10 @@ function processRows(rawRows){
     fTotal:0,fSolved:0,fCancelled:0,fInReview:0,fPending:0,fPendingInfo:0,fRejected:0,
     fAgenteLento:0,fFraudePendOk:0,fFraudeVencido:0,fAg5Ok:0,fAg5Breach:0,
     fSeg2Ok:0,fSeg2Breach:0,fSeg3Ok:0,fSeg3Breach:0,
+    fNFOpen:0,fNFBreach:0,fInfoPend:0,
     cfTotal:0,cfAgenteLento:0,cfFraudePendOk:0,cfFraudeVencido:0,cfAg5Ok:0,cfAg5Breach:0,
     cfSeg2Ok:0,cfSeg2Breach:0,cfSeg3Ok:0,cfSeg3Breach:0,
+    cfNFOpen:0,cfNFBreach:0,
     // FRAUD - current month
     cfTotal:0,cfAgenteLento:0,cfFraudePendOk:0,cfFraudeVencido:0,cfAg5Ok:0,cfAg5Breach:0,
     // REGULAR - historical
@@ -615,7 +634,7 @@ function processRows(rawRows){
 
   const agents={};
   // global fraud
-  const gf={total:0,agenteLento:0,fraudePendOk:0,fraudeVencido:0,ag5Breach:0,fSeg2Breach:0,fSeg3Breach:0};
+  const gf={total:0,agenteLento:0,fraudePendOk:0,fraudeVencido:0,ag5Breach:0,fSeg2Breach:0,fSeg3Breach:0,fNFBreach:0};
   // global regular
   const gr={total:0,solved:0,prog:0,s1b:0,s2b:0,s3b:0,docsOk:0,docsBreached:0,authOk:0,authBreached:0};
   // breach list
@@ -714,34 +733,59 @@ function processRows(rawRows){
         }
       }
       // Mirror to current month counters if ticket is from this month
-      // SEG2/SEG3 for IDNTC (same rules as Regular, after Fraude dictaminó)
+      // POST-DICTAMEN: classify based on Validacion Fraude value
       if(isOpen && ticketDate){
         const bhF=bizHours(ticketDate,now,country);
         const bdF=Math.floor(bhF/8);
-        // SEG2: procedente/buena_fe_macro + caseId + fechaChbk before day 5
-        if(status==='In review'||status==='Pending info'){
+        const dictType = dictamenType(validFraude);
+
+        // Fraude confirmado → debe ir al SEG 2 (procedente + Case ID + Fecha chbk)
+        if(dictType==='confirmed'){
           const tieneM2=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
           const tieneSeg2F=tieneM2&&caseId&&fechaChbk;
-          if(bdF>=5&&!tieneSeg2F){
+          if(!tieneSeg2F){
             ag.fSeg2Breach++;gf.fSeg2Breach++;
+            const falta2=[];
+            if(!tieneM2)falta2.push('macro procedente');
+            if(!caseId)falta2.push('Case ID');
+            if(!fechaChbk)falta2.push('Fecha chbk');
             allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
-              slaName:'FRAUD SEG2',detail:'IDNTC sin procedente al día '+bdF,dias:bdF,severity:'hi',seg:'SEG 2 · Dictamen Procedencia'});
-          } else if(tieneSeg2F) ag.fSeg2Ok++;
-        }
-        // SEG3: abono ≤5d háb from fechaChbk
-        if(fechaChbk&&!esBuenaFe){
-          if(fechaAbono){
-            const bdA=Math.floor(bizHours(fechaChbk,fechaAbono,country)/8);
-            if(bdA<=5)ag.fSeg3Ok++;
+              slaName:'FRAUD SEG2',detail:'Fraude confirmado · falta: '+falta2.join(', '),
+              dias:bdF,severity:'hi',seg:'SEG 2 · Dictamen Procedencia'});
           } else {
-            const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);
-            if(bdA>5){
-              ag.fSeg3Breach++;gf.fSeg3Breach++;
-              allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
-                slaName:'FRAUD SEG3',detail:'IDNTC sin abono · '+bdA+'d desde chbk',dias:bdA,severity:'hi',seg:'SEG 3 · Abono al Cliente'});
-            } else ag.fSeg3Ok++;
+            ag.fSeg2Ok++;
+            // SEG3: check abono
+            if(fechaChbk&&!esBuenaFe){
+              if(fechaAbono){
+                const bdA=Math.floor(bizHours(fechaChbk,fechaAbono,country)/8);
+                if(bdA<=5)ag.fSeg3Ok++;
+              } else {
+                const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);
+                if(bdA>5){
+                  ag.fSeg3Breach++;gf.fSeg3Breach++;
+                  allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
+                    slaName:'FRAUD SEG3',detail:'IDNTC sin abono · '+bdA+'d desde chbk',
+                    dias:bdA,severity:'hi',seg:'SEG 3 · Abono al Cliente'});
+                } else ag.fSeg3Ok++;
+              }
+            }
           }
         }
+
+        // No Fraude → debe cerrarse como Cancelled
+        if(dictType==='nf'){
+          ag.fNFOpen++;gf.fNFBreach++;
+          allBreaches.push({ticketId,agent,country,claimType,status,ticketDate:ticketDateRaw,
+            slaName:'FRAUD NF ABIERTO',detail:'No Fraude · debe cancelarse · '+validFraude,
+            dias:bdF,severity:'md',seg:'Fraud · No Fraude'});
+        }
+
+        // Más info (Context/Good Faith) → pendiente, no es breach
+        if(dictType==='info'){
+          ag.fInfoPend++;
+        }
+
+        // Still pending (no dictamen yet) - existing logic handles this above
       }
 
       if(isCurrMonth){
@@ -886,17 +930,16 @@ function processRows(rawRows){
           const esPendC=validFraude.toLowerCase()==='pending'||validFraude.toLowerCase()==='pendiente';
           if(esPendC&&fechaAlta){const bdF=Math.floor(bizHours(fechaAlta,now,country)/8);if(bdF<=3)ag.cfFraudePendOk++;else ag.cfFraudeVencido++;}
           if(ticketDate){const bd5=Math.floor(bizHours(ticketDate,now,country)/8);const tM=macro&&!macro.toLowerCase().includes('pendiente');if(bd5>=5&&!tM)ag.cfAg5Breach++;else if(tM)ag.cfAg5Ok++;}
-          // SEG2/SEG3 curr for IDNTC
+          // SEG2/SEG3/NF curr for IDNTC
           if(ticketDate){
-            const bdC=Math.floor(bizHours(ticketDate,now,country)/8);
-            if(status==='In review'||status==='Pending info'){
-              const tM2=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
-              if(bdC>=5&&!(tM2&&caseId&&fechaChbk))ag.cfSeg2Breach++;else if(tM2&&caseId&&fechaChbk)ag.cfSeg2Ok++;
+            const dictC=dictamenType(validFraude);
+            if(dictC==='confirmed'){
+              const tieneM2C=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
+              if(!(tieneM2C&&caseId&&fechaChbk))ag.cfSeg2Breach++;else{ag.cfSeg2Ok++;
+                if(fechaChbk&&!esBuenaFe){const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);if(bdA>5)ag.cfSeg3Breach++;else ag.cfSeg3Ok++;}
+              }
             }
-            if(fechaChbk&&!esBuenaFe){
-              const bdA=Math.floor(bizHours(fechaChbk,now,country)/8);
-              if(bdA>5)ag.cfSeg3Breach++;else ag.cfSeg3Ok++;
-            }
+            if(dictC==='nf'){ag.cfNFOpen++;}
           }
         }
       }
@@ -1195,6 +1238,8 @@ function renderFraudCards(agents,mode){
     var dTot=fAg5Ok+fAg5B,dP=dTot>0?pct(fAg5Ok,dTot):100,dCls=fAg5B>0?'breach':dTot>0?'ok':'neutral';
     var fSeg2Ok=isCurr?ag.cfSeg2Ok:ag.fSeg2Ok,fSeg2Breach=isCurr?ag.cfSeg2Breach:ag.fSeg2Breach;
     var fSeg3Ok=isCurr?ag.cfSeg3Ok:ag.fSeg3Ok,fSeg3Breach=isCurr?ag.cfSeg3Breach:ag.fSeg3Breach;
+    var fNFOpen=isCurr?(ag.cfNFOpen||0):(ag.fNFOpen||0);
+    var fInfoPend=isCurr?0:(ag.fInfoPend||0);
     var fSeg2T=fSeg2Ok+fSeg2Breach,fS2p=fSeg2T>0?pct(fSeg2Ok,fSeg2T):100;
     var fSeg3T=fSeg3Ok+fSeg3Breach,fS3p=fSeg3T>0?pct(fSeg3Ok,fSeg3T):100;
     var totalAlert=fLento+fVenc+fAg5B,cardBorder=totalAlert>0?'border-color:var(--red-b);':'';
@@ -1226,17 +1271,25 @@ function renderFraudCards(agents,mode){
           +'<div class="fsla-nums"><span class="go">✓ '+n(fAg5Ok)+' ejecutados</span><span class="'+(fAg5B>0?'hi':'')+'">✗ '+n(fAg5B)+' pendientes</span></div>'
           +'<div class="fsla-sub">Ticket_Date día 5 → macro aplicada aunque Fraude tarde</div>'
         +'</div>'
-        +(fSeg2T>0||fSeg3T>0?
+        +(fSeg2T>0||fSeg3T>0||fNFOpen>0||fInfoPend>0?
           '<div style="margin-top:6px;padding:8px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--b1);">'
           +'<div style="font-family:var(--fm);font-size:9px;color:var(--td);letter-spacing:.06em;margin-bottom:7px;">POST-DICTAMEN · CHARGEBACK</div>'
-          +('<div class="seg-row"><span class="seg-name">SEG 2 · Procedencia</span>'
+          +(fSeg2T>0?'<div class="seg-row"><span class="seg-name">SEG 2 · Procedencia</span>'
             +'<div class="seg-bar-wrap"><div class="seg-bar-fill" style="width:'+Math.max(fS2p,2)+'%;background:'+(fSeg2Breach>0?'var(--red)':'var(--green)')+'"></div></div>'
             +'<span class="seg-pct" style="color:'+(fSeg2Breach>0?'var(--red)':'var(--green)')+';">'+(fSeg2T>0?fS2p+'%':'—')+'</span>'
-            +'<span class="seg-breach" style="color:'+(fSeg2Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg2Breach>0?'✗ '+fSeg2Breach:' ✓')+'</span></div>')
-          +('<div class="seg-row"><span class="seg-name">SEG 3 · Abono</span>'
+            +'<span class="seg-breach" style="color:'+(fSeg2Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg2Breach>0?'✗ '+fSeg2Breach:' ✓')+'</span></div>':'')
+          +(fSeg3T>0?'<div class="seg-row"><span class="seg-name">SEG 3 · Abono</span>'
             +'<div class="seg-bar-wrap"><div class="seg-bar-fill" style="width:'+Math.max(fS3p,2)+'%;background:'+(fSeg3Breach>0?'var(--red)':'var(--cyan)')+'"></div></div>'
             +'<span class="seg-pct" style="color:'+(fSeg3Breach>0?'var(--red)':'var(--cyan)')+';">'+(fSeg3T>0?fS3p+'%':'—')+'</span>'
-            +'<span class="seg-breach" style="color:'+(fSeg3Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg3Breach>0?'✗ '+fSeg3Breach:' ✓')+'</span></div>')
+            +'<span class="seg-breach" style="color:'+(fSeg3Breach>0?'var(--red)':'var(--tm)')+';">'+(fSeg3Breach>0?'✗ '+fSeg3Breach:' ✓')+'</span></div>':'')
+          +(fNFOpen>0?'<div class="seg-row"><span class="seg-name" style="color:var(--amber);">⚠ No Fraude abierto</span>'
+            +'<div class="seg-bar-wrap"></div>'
+            +'<span class="seg-pct" style="color:var(--amber);">'+n(fNFOpen)+'</span>'
+            +'<span class="seg-breach" style="color:var(--amber);">debe cancelarse</span></div>':'')
+          +(fInfoPend>0?'<div class="seg-row"><span class="seg-name" style="color:var(--td);">⏳ Más info</span>'
+            +'<div class="seg-bar-wrap"></div>'
+            +'<span class="seg-pct" style="color:var(--td);">'+n(fInfoPend)+'</span>'
+            +'<span class="seg-breach" style="color:var(--td);">en espera</span></div>':'')
           +'</div>'
         :'')
       +'</div>'
