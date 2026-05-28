@@ -696,7 +696,8 @@ function processRows(rawRows){
 
     // ── FRAUDE ────────────────────────────────────────────────
     // Solo aplica si: IDNTC + caso abierto (no Cancelled/Solved/Rejected)
-    if(isIDNTC){
+    // Skip IDNTC fraud processing if case is in authorization process
+    if(isIDNTC && !isAuth){
       ag.fTotal++;gf.total++;
       if(status==='Solved')             ag.fSolved++;
       else if(status==='Cancelled')     ag.fCancelled++;
@@ -1122,12 +1123,15 @@ function renderGeneral(agents, gf, gr, allBreaches){
     alertStrip.querySelector('.alert-strip-title').style.color='var(--green)';
     alertEl.innerHTML='<span style="font-family:var(--fm);font-size:11px;color:var(--green)">Todos los SLAs en cumplimiento</span>';
   } else {
-    alertEl.innerHTML = alertDefs.map(a=>`
-      <div class="alert-item">
-        <span class="alert-item-top">${a.label}</span>
-        <span class="alert-item-val">${n(a.val)}</span>
-        <span class="alert-item-sub">${a.sub}</span>
-      </div>`).join('');
+    alertEl.innerHTML = alertDefs.map(function(a){
+        var rid='gal'+a.label.replace(/[^a-zA-Z0-9]/g,'');
+        _alertRegistry2[rid]={agent:'__ALL__',sla:ALERT_SLA_MAP[a.label]||'',lbl:a.label};
+        return '<div class="alert-item" id="'+rid+'" onclick="showGlobalAlert(this.id)" style="cursor:pointer;" title="Click para ver tickets">'
+          +'<span class="alert-item-top">'+a.label+'</span>'
+          +'<span class="alert-item-val">'+n(a.val)+'</span>'
+          +'<span class="alert-item-sub">'+a.sub+' · click →</span>'
+        +'</div>';
+      }).join('');
   }
 
   // Countries
@@ -1189,15 +1193,21 @@ function renderGeneral(agents, gf, gr, allBreaches){
     const bg    = ({MX:'rgba(79,142,247,.15)',CO:'rgba(167,139,250,.15)',BR:'rgba(15,189,118,.12)'})[ag.country]||'';
     const s1col = s1t===0?'var(--td)':s1p>=80?'var(--green)':s1p>=50?'var(--amber)':'var(--red)';
     const s2col = s2t===0?'var(--td)':s2p>=80?'var(--green)':s2p>=50?'var(--amber)':'var(--red)';
-    const alertParts = [];
-    if(ag.rSla1Breach>0)    alertParts.push('S1 '+ag.rSla1Breach);
-    if(ag.rSeg2Breach>0)    alertParts.push('S2 '+ag.rSeg2Breach);
-    if(ag.rSeg3Breach>0)    alertParts.push('S3 '+ag.rSeg3Breach);
-    if(ag.fFraudeVencido>0) alertParts.push('Fraud-B '+ag.fFraudeVencido);
-    if(ag.fAg5Breach>0)     alertParts.push('Fraud-C '+ag.fAg5Breach);
-    if(ag.fAgenteLento>0)   alertParts.push('Fraud-A '+ag.fAgenteLento);
-    const alertHtml = alertParts.length > 0
-      ? alertParts.map(function(a){ return '<span style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);white-space:nowrap;">'+a+'</span>'; }).join(' ')
+    var SLA_MAP2 = {'S1':'SLA-1 PENDING','S2':'SEG 2 DÍA 5','S3':'SEG 3 ABONO',
+      'Fraud-B':'FRAUDE >3d','Fraud-C':'AGENTE DÍA 5','Fraud-A':'FRAUD SUBIDA TARDIA'};
+    var alertDefs2 = [];
+    if(ag.rSla1Breach>0)    alertDefs2.push({lbl:'S1',    val:ag.rSla1Breach,    sla:'SLA-1 PENDING'});
+    if(ag.rSeg2Breach>0)    alertDefs2.push({lbl:'S2',    val:ag.rSeg2Breach,    sla:'SEG 2 DÍA 5'});
+    if(ag.rSeg3Breach>0)    alertDefs2.push({lbl:'S3',    val:ag.rSeg3Breach,    sla:'SEG 3 ABONO'});
+    if(ag.fFraudeVencido>0) alertDefs2.push({lbl:'Fraud-B',val:ag.fFraudeVencido,sla:'FRAUDE >3d'});
+    if(ag.fAg5Breach>0)     alertDefs2.push({lbl:'Fraud-C',val:ag.fAg5Breach,    sla:'AGENTE DÍA 5'});
+    if(ag.fAgenteLento>0)   alertDefs2.push({lbl:'Fraud-A',val:ag.fAgenteLento,  sla:'FRAUD SUBIDA TARDIA'});
+    const alertHtml = alertDefs2.length > 0
+      ? alertDefs2.map(function(a){
+          var rid='ar'+ag.name.replace(/[^a-zA-Z0-9]/g,'')+''+a.lbl.replace(/[^a-zA-Z0-9]/g,'');
+          _alertRegistry2[rid]={agent:ag.name,sla:a.sla,lbl:a.lbl};
+          return '<span id="'+rid+'" onclick="showAlertDetail(this.id)" title="Click para ver detalle" style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);white-space:nowrap;cursor:pointer;">'+a.lbl+' '+a.val+'</span>';
+        }).join(' ')
       : '<span style="font-family:var(--fm);font-size:10px;color:var(--green)">OK</span>';
     const cells = [
       '<div style="display:flex;align-items:center;gap:8px;"><div style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--fh);font-size:10px;font-weight:800;background:'+bg+';color:'+col+';flex-shrink:0;">'+ag.name.slice(0,2).toUpperCase()+'</div><div><div style="font-weight:500;font-size:12px;">'+ag.name+'</div><div style="font-family:var(--fm);font-size:9px;color:var(--td)">'+ag.country+'</div></div></div>',
