@@ -1504,7 +1504,11 @@ function renderBreach(allBreaches){
             +'<div style="font-family:var(--fh);font-size:14px;font-weight:700;">'+ag.agent+'</div>'
             +'<div style="font-family:var(--fm);font-size:9px;color:var(--tm);">'+ag.country+' · '+ag.cases.length+' tickets fuera de SLA'+(critCount>0?' · '+critCount+' críticos':'')+'</div>'
           +'</div>'
-          +'<span style="font-family:var(--fm);font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);">⚠ '+ag.cases.length+'</span>'
+          +(function(){
+            var abid='abadge_'+ag.agent.replace(/[^a-zA-Z0-9]/g,'');
+            _alertRegistry2[abid]={agent:ag.agent,sla:'',lbl:ag.agent+' · todos'};
+            return '<span id="'+abid+'" onclick="showAlertDetail(this.id)" style="font-family:var(--fm);font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);cursor:pointer;">⚠ '+ag.cases.length+'</span>';
+          })()
         +'</div>'
         // Column headers
         + THEAD
@@ -1526,6 +1530,10 @@ function showAlertDetail(rid){
     return b.agent===reg.agent && (!reg.sla||b.slaName===reg.sla);
   });
   _showBreachModal(reg.agent+' · '+reg.lbl, cases.length+' tickets fuera de SLA', cases);
+}
+function showBreachAgent(agentName){
+  var cases=(window._breachData||[]).filter(function(b){return b.agent===agentName;});
+  _showBreachModal(agentName+' · Todos los breaches', cases.length+' tickets fuera de SLA', cases);
 }
 function showGlobalAlert(rid){
   var reg = _alertRegistry2[rid];
