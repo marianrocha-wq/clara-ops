@@ -1397,6 +1397,7 @@ function renderRegularCards(agents,mode){
     var s3Ok=isCurr?ag.crSeg3Ok:ag.rSeg3Ok,s3B=isCurr?ag.crSeg3Breach:ag.rSeg3Breach;
     var docsOk=isCurr?ag.cdocsOk:ag.docsOk,docsB=isCurr?ag.cdocsBreached:ag.docsBreached;
     var authOk=isCurr?ag.cauthOk:ag.authOk,authB=isCurr?ag.cauthBreached:ag.authBreached;
+    var atmPend=isCurr?(ag.catmPending||0):(ag.atmPending||0);
     var totalBreaches=s1B+s2B+s3B,resP=pct(rSolved,rTotal),cardBorder=totalBreaches>0?'border-color:var(--red-b);':'';
     var periodLabel=isCurr?'MES ACTUAL':'HISTÓRICO 2026';
     function segRow(lbl,ok,breach,col){
