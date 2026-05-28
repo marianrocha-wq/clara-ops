@@ -335,6 +335,7 @@ body{background:var(--bg);color:var(--tx);font-family:var(--fb);font-size:13px;l
         <div class="kpi" style="padding:10px 12px;border-color:var(--red-b);"><div class="kpi-lbl">DOCS VENCIDOS</div><div class="kpi-val" style="font-size:20px;color:var(--red)" id="g-docs-breach">—</div><div class="kpi-sub r">&gt;20d sin docs del cliente</div></div>
         <div class="kpi" style="padding:10px 12px;border-color:var(--amber-b);"><div class="kpi-lbl">AUTH EN TIEMPO</div><div class="kpi-val" style="font-size:20px;color:var(--green)" id="g-auth-ok">—</div><div class="kpi-sub">En proceso (&lt;7d)</div></div>
         <div class="kpi" style="padding:10px 12px;border-color:var(--red-b);"><div class="kpi-lbl">AUTH VENCIDA</div><div class="kpi-val" style="font-size:20px;color:var(--red)" id="g-auth-breach">—</div><div class="kpi-sub r">&gt;7d desde fecha transacción</div></div>
+        <div class="kpi" style="padding:10px 12px;border-color:var(--b1);"><div class="kpi-lbl">🏧 ATM · RESOLUCIÓN</div><div class="kpi-val" style="font-size:20px;color:var(--amber)" id="g-atm-pending">—</div><div class="kpi-sub">En espera de resolución final</div></div>
       </div>
     </div>
 
@@ -522,6 +523,7 @@ function dictamenType(v, r){
 const DOC_MACROS=['documentacion_chargebacks_macro','recordatorio_documentacion_macro','co_documentacion_servicio_no_prestado','documentacion_servicio_no_prestado','co_documentacion_chargebacks_macro'];
 function isDocMacro(m){var l=(m||'').toLowerCase();return DOC_MACROS.some(function(d){return l.includes(d);});}
 function isAuthMacro(m){return(m||'').toLowerCase().includes('en_proceso_autorizacion_macro');}
+function isATMMacro(m,r){return(m||'').toLowerCase().includes('procedencia_atm')||(r||'').toLowerCase().includes('proceeds-atm');}
 
 const HOLIDAYS = {
   MX:new Set(['2026-01-01','2026-02-02','2026-03-16','2026-04-02','2026-04-03','2026-05-01','2026-09-16','2026-11-16','2026-12-25']),
@@ -647,7 +649,7 @@ function processRows(rawRows){
   // global fraud
   const gf={total:0,agenteLento:0,fraudePendOk:0,fraudeVencido:0,ag5Breach:0,fSeg2Breach:0,fSeg3Breach:0,fNFBreach:0};
   // global regular
-  const gr={total:0,solved:0,prog:0,s1b:0,s2b:0,s3b:0,docsOk:0,docsBreached:0,authOk:0,authBreached:0};
+  const gr={total:0,solved:0,prog:0,s1b:0,s2b:0,s3b:0,docsOk:0,docsBreached:0,authOk:0,authBreached:0,atmPending:0};
   // breach list
   const allBreaches=[];
 
@@ -875,7 +877,9 @@ function processRows(rawRows){
         const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena fe')
           || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena fe')
           || (macro||'').toLowerCase().includes('buena_fe_macro');
-        if(fechaChbk && !esBuenaFe){
+        // ATM: abono espera resolución final, no medir SEG3
+        if(isATM && isOpen){ ag.atmPending++; gr.atmPending++; }
+        if(fechaChbk && !esBuenaFe && !isATM){
           if(fechaAbono){
             // Ciclo completo — solo registrar si fue a tiempo o no, sin breach activo
             const bdA=Math.floor(bizHours(fechaChbk,fechaAbono,country)/8);
@@ -938,6 +942,7 @@ function processRows(rawRows){
           if(bdC>5)ag.crSeg3Breach++;else ag.crSeg3Ok++;
         }
         if(isDoc&&isOpen&&fechaAltaDate){const bdD=Math.floor(bizHours(fechaAltaDate,now,country)/8);if(bdD>20)ag.cdocsBreached++;else ag.cdocsOk++;}
+        if(isATM&&isOpen){ag.catmPending++;}
         if(isAuth&&isOpen&&transactionDate){const bdA=Math.floor(bizHours(transactionDate,now,country)/8);if(bdA>7)ag.cauthBreached++;else ag.cauthOk++;}
       }
       if(isIDNTC&&isCurrMonth){
@@ -1012,6 +1017,7 @@ function renderGeneral(agents, gf, gr, allBreaches){
   set('g-docs-breach', n(gr.docsBreached));
   set('g-auth-ok',     n(gr.authOk));
   set('g-auth-breach', n(gr.authBreached));
+  set('g-atm-pending', n(gr.atmPending));
 
   // SLA overview rows
   const slaRows = [
@@ -1435,6 +1441,11 @@ function renderRegularCards(agents,mode){
           +'<span style="font-family:var(--fm);font-size:10px;color:var(--amber);">'+n(authOk)+' en proceso</span>'
           +'<span style="font-family:var(--fm);font-size:10px;margin-left:auto;color:'+(authB>0?'var(--red)':'var(--tm)')+';">'+(authB>0?'⚠ '+authB+' vencidos (+7d)':'✓')+'</span>'
         +'</div>'
+        +(atmPend>0?'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--b1);">'
+          +'<span style="font-family:var(--fm);font-size:9px;color:var(--td);width:80px;">🏧 ATM</span>'
+          +'<span style="font-family:var(--fm);font-size:10px;color:var(--amber);">'+n(atmPend)+' en espera</span>'
+          +'<span style="font-family:var(--fm);font-size:10px;margin-left:auto;color:var(--td);">resolución final</span>'
+        +'</div>':'')
         +'<div class="divider" style="margin:8px 0;"></div>'
         +'<div style="font-family:var(--fm);font-size:9px;color:var(--td);margin-bottom:5px;">STATUS ACTUAL</div>'
         +'<div class="status-pills">'+pills+'</div>'
