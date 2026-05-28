@@ -1134,14 +1134,21 @@ function renderGeneral(agents, gf, gr, allBreaches){
       'FRAUD NF ABIERTO':'FRAUD NF ABIERTO','DOCS VENCIDOS':'DOCS VENCIDOS','AUTH VENCIDA':'AUTH VENCIDA',
     };
     alertEl.innerHTML = alertDefs.map(function(a){
-        var rid='gal'+a.label.replace(/[^a-zA-Z0-9]/g,'');
-        _alertRegistry2[rid]={agent:'__ALL__',sla:ALERT_SLA_MAP[a.label]||'',lbl:a.label};
-        return '<div class="alert-item" id="'+rid+'" onclick="showGlobalAlert(this.id)" style="cursor:pointer;" title="Click para ver tickets">'
+        return '<div class="alert-item g-alert-card" data-sla="'+(ALERT_SLA_MAP[a.label]||'')+'" style="cursor:pointer;" title="Click para ver tickets">'
           +'<span class="alert-item-top">'+a.label+'</span>'
           +'<span class="alert-item-val">'+n(a.val)+'</span>'
           +'<span class="alert-item-sub">'+a.sub+' · click →</span>'
         +'</div>';
       }).join('');
+      // Bind click after innerHTML
+      alertEl.querySelectorAll('.g-alert-card').forEach(function(card){
+        card.addEventListener('click', function(){
+          var sla = this.getAttribute('data-sla');
+          var lbl = this.querySelector('.alert-item-top').textContent;
+          var cases = (window._breachData||[]).filter(function(b){ return !sla||b.slaName===sla; });
+          _showBreachModal(lbl, cases.length+' tickets · todos los agentes', cases);
+        });
+      });
   }
 
   // Countries
@@ -1213,9 +1220,7 @@ function renderGeneral(agents, gf, gr, allBreaches){
     if(ag.fAgenteLento>0)   alertDefs2.push({lbl:'Fraud-A',val:ag.fAgenteLento,  sla:'FRAUD SUBIDA TARDIA'});
     var alertHtml = alertDefs2.length>0
       ? alertDefs2.map(function(a){
-          var rid='ar'+ag.name.replace(/[^a-zA-Z0-9]/g,'')+''+a.lbl.replace(/[^a-zA-Z0-9]/g,'');
-          _alertRegistry2[rid]={agent:ag.name,sla:a.sla,lbl:a.lbl};
-          return '<span id="'+rid+'" onclick="showAlertDetail(this.id)" title="'+a.sla+'" style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);white-space:nowrap;cursor:pointer;margin:1px;">'+a.lbl+' '+a.val+'</span>';
+          return '<span class="agent-alert-badge" data-agent="'+ag.name+'" data-sla="'+a.sla+'" data-lbl="'+a.lbl+' '+a.val+'" style="font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:4px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);white-space:nowrap;cursor:pointer;margin:1px;" title="'+a.sla+'">'+a.lbl+' '+a.val+'</span>';
         }).join('')
       : '<span style="font-family:var(--fm);font-size:10px;color:var(--green)">OK</span>';
     function dc(val,color){return '<div style="font-family:var(--fm);font-size:11px;color:'+(val>0?color:'var(--td)')+';">'+(val>0?n(val):'—')+'</div>';}
@@ -1335,6 +1340,16 @@ function renderFraudCards(agents,mode){
       +'</div>'
     +'</div>';
   }).join('');
+  // Bind agent badge clicks
+  document.getElementById('g-agent-table').querySelectorAll('.agent-alert-badge').forEach(function(badge){
+    badge.addEventListener('click', function(){
+      var agent = this.getAttribute('data-agent');
+      var sla   = this.getAttribute('data-sla');
+      var lbl   = this.getAttribute('data-lbl');
+      var cases = (window._breachData||[]).filter(function(b){ return b.agent===agent && (!sla||b.slaName===sla); });
+      _showBreachModal(agent+' · '+lbl, cases.length+' tickets fuera de SLA', cases);
+    });
+  });
 }
 
 // ════════════════════════════════════════
