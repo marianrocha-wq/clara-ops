@@ -872,7 +872,9 @@ function processRows(rawRows){
         // - Si tiene fechaAbono → ciclo completo, medir si llegó a tiempo (histórico, no alertar)
         // - Si NO tiene fechaAbono + caso abierto → pendiente de abono, medir días transcurridos
         // Buena fe = abono se aplica al final del proceso, no es pendiente de abono
-        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena') || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena');
+        const esBuenaFe = (fechaAbono||'').toString().toLowerCase().includes('buena fe')
+          || (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena fe')
+          || (macro||'').toLowerCase().includes('buena_fe_macro');
         if(fechaChbk && !esBuenaFe){
           if(fechaAbono){
             // Ciclo completo — solo registrar si fue a tiempo o no, sin breach activo
