@@ -499,12 +499,16 @@ const FRAUDE_NO_FRAUDE  = ['nf - history','nf - subscription','nf - tokenization
   'nf - in-person contactless + pin transaction','nf - no pattern of fraud',
   'nf - account activity','nf - wallet','nf - 3ds','nf - client recognizes trx'];
 const FRAUDE_MAS_INFO   = ['context','good faith'];
-function dictamenType(v){
+function dictamenType(v, r){
   var l=(v||'').toLowerCase().trim();
+  var rl=(r||'').toLowerCase().trim();
   if(!l||l==='pending'||l==='pendiente') return 'pending';
   if(FRAUDE_CONFIRMADO.some(function(x){return l.includes(x);})) return 'confirmed';
   if(FRAUDE_NO_FRAUDE.some(function(x){return l===x||l.includes(x);})) return 'nf';
   if(FRAUDE_MAS_INFO.some(function(x){return l.includes(x);})) return 'info';
+  // Check Rulling column as fallback
+  if(rl.includes('proceeds-chargeback')||rl.includes('proceeds-atm')) return 'confirmed';
+  if(rl.includes('not proceeds')) return 'nf';
   return 'other';
 }
 
@@ -657,6 +661,7 @@ function processRows(rawRows){
     const fechaChbk     = parseDate(r['Fecha de contracargo']||'');
     const fechaAbono    = parseDate(r['Fecha_Abono_temporal']||'');
     const caseId        = (r['Dispute ID']||r['File ID CHBK']||'').trim();
+    const rulling       = (r['Rulling']||r['rulling']||'').trim().toLowerCase();
 
     if(!status)continue;
     if(!agents[agent])agents[agent]=emptyAg(agent,country);
@@ -737,7 +742,7 @@ function processRows(rawRows){
       if(isOpen && ticketDate){
         const bhF=bizHours(ticketDate,now,country);
         const bdF=Math.floor(bhF/8);
-        const dictType = dictamenType(validFraude);
+        const dictType = dictamenType(validFraude,rulling);
 
         // Fraude confirmado → debe ir al SEG 2 (procedente + Case ID + Fecha chbk)
         if(dictType==='confirmed'){
@@ -932,7 +937,7 @@ function processRows(rawRows){
           if(ticketDate){const bd5=Math.floor(bizHours(ticketDate,now,country)/8);const tM=macro&&!macro.toLowerCase().includes('pendiente');if(bd5>=5&&!tM)ag.cfAg5Breach++;else if(tM)ag.cfAg5Ok++;}
           // SEG2/SEG3/NF curr for IDNTC
           if(ticketDate){
-            const dictC=dictamenType(validFraude);
+            const dictC=dictamenType(validFraude,rulling);
             if(dictC==='confirmed'){
               const tieneM2C=macro.toLowerCase().includes('procedente')||macro.toLowerCase().includes('buena_fe_macro');
               if(!(tieneM2C&&caseId&&fechaChbk))ag.cfSeg2Breach++;else{ag.cfSeg2Ok++;
