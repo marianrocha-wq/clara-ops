@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es" style="color-scheme:dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard de Automatización</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:dark}
+:root{
+  --bg:#0d1117;--surface:#131b27;--surface2:#192033;--border:#1e2d42;--border2:#2a3d58;
+  --text:#c8d6e8;--text2:#7a93ad;--text3:#3d5166;
+  --accent:#0e2140;--accent2:#1a4a8a;--accent-light:#0f1e33;
+  --cc-bg:#0f1d35;--cc:#6aa3f5;--log-bg:#0a1e14;--log:#52b870;--bo-bg:#1a1508;--bo:#c9963e;
+  --done:#2e7d3e;--done-bg:#091a10;--prog:#8a5e10;--prog-bg:#18140a;--pend:#334b62;--pend-bg:#0e1923;
+  --p1:#d94f4f;--p1bg:#1a0d0d;--p2:#c47230;--p2bg:#1a1108;--p3:#4a7ec9;--p3bg:#0c1628;--p4:#3d5166;--p4bg:#0e1923;
+  --r:10px;--rs:6px;--shadow:0 1px 4px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4)
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;min-height:100vh}
+
+.header{background:var(--accent);color:#fff;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:200}
+.hlogo{display:flex;align-items:center;gap:10px}
+.hicon{width:30px;height:30px;background:#1a4a8a;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.htitle{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.hright{display:flex;align-items:center;gap:10px}
+.lupd{font-size:10px;color:rgba(255,255,255,.5);font-family:'DM Mono',monospace;background:rgba(255,255,255,.08);padding:3px 10px;border-radius:20px}
+.hbtn{font-size:11px;padding:5px 12px;border-radius:var(--rs);border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.8);cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s}
+.hbtn:hover{background:rgba(255,255,255,.12)}
+
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 2rem;position:sticky;top:58px;z-index:100;gap:4px}
+.tab{font-size:13px;font-weight:500;padding:14px 16px;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;transition:.15s;user-select:none;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab svg{width:14px;height:14px;flex-shrink:0}
+
+.main{max-width:100%;margin:0 auto;padding:1rem 1.25rem}
+.panel{display:none}.panel.active{display:block}
+
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:.9rem 1.1rem;box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 0 1px rgba(45,90,158,.15);transition:transform .15s}
+.kpi:hover{transform:translateY(-1px)}
+.kpi-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:3px}
+.kpi-val{font-size:26px;font-weight:600;letter-spacing:-.03em;line-height:1;margin-bottom:2px}
+.kpi-sub{font-size:10px;color:var(--text2)}
+.k-total .kpi-val{color:#6aa3f5}.k-done .kpi-val{color:var(--done)}.k-prog .kpi-val{color:var(--prog)}.k-pend .kpi-val{color:#6a8fad}
+
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.4rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
+.pcard-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pcard-lbl{font-size:12px;font-weight:600}
+.pcard-pct{font-family:'DM Mono',monospace;font-size:13px;color:var(--done);font-weight:500}
+.pbar{background:var(--bg);border-radius:20px;height:10px;position:relative;overflow:hidden}
+.pbar-done{height:100%;border-radius:20px;background:linear-gradient(90deg,#2d7dd2,#1a4a8a);position:absolute;left:0;top:0;transition:width .6s}
+.pbar-prog{height:100%;background:#8a5e10;position:absolute;top:0;transition:left .6s,width .6s}
+.pleg{display:flex;gap:14px;margin-top:7px}
+.pleg-i{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2)}
+.pleg-d{width:7px;height:7px;border-radius:50%}
+
+.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.sw{position:relative;flex:1;min-width:180px}
+.sw svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text3)}
+.si{width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;transition:border-color .15s}
+.si:focus{border-color:var(--accent)}
+.cg{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:11px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;transition:all .15s;white-space:nowrap}
+.chip:hover{border-color:var(--border2);background:var(--surface)}
+.chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip.cd.active{background:var(--done);border-color:var(--done)}
+.chip.cp.active{background:#a06800;border-color:#a06800}
+.chip.cn.active{background:var(--pend);border-color:var(--pend)}
+.rc{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap}
+.abtn{background:var(--accent);color:#fff;font-size:12px;padding:7px 14px;border-radius:var(--rs);border:none;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;white-space:nowrap;transition:.15s}
+.abtn:hover{background:#112a1d}
+
+/* PRIORITY BADGES */
+.pri{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;white-space:nowrap}
+.pri-1{color:var(--p1);background:var(--p1bg)}
+.pri-2{color:var(--p2);background:var(--p2bg)}
+.pri-3{color:var(--p3);background:var(--p3bg)}
+.pri-4{color:var(--p4);background:var(--p4bg)}
+
+/* DEADLINE BADGE */
+.dl{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;white-space:nowrap;font-family:'DM Mono',monospace}
+.dl-ok{color:#2a6420;background:#eaf3e3}
+.dl-warn{color:#7a4d00;background:#fff4d6}
+.dl-over{color:#7a1f1f;background:#fef2f2}
+.dl-none{color:var(--text3);background:var(--bg);border:1px solid var(--border)}
+
+/* BULLETS / CHECKPOINTS */
+.bullets-list{list-style:none;padding:0;margin:3px 0 0 0}
+.bullets-list li{display:flex;align-items:flex-start;gap:4px;font-size:9px;color:var(--text2);line-height:1.35;margin-bottom:3px}
+.bullet-cb{width:11px;height:11px;border-radius:2px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;flex-shrink:0;margin-top:1px;accent-color:var(--accent)}
+.bullet-cb:checked+span{text-decoration:line-through;color:var(--text3)}
+.bullet-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--text3);margin-left:2px;flex-shrink:0}
+
+/* GANTT TABLE */
+.gwrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.gscroll{overflow-x:auto;width:100%}
+.gt{width:100%;border-collapse:collapse;table-layout:fixed}
+.gt thead th{background:var(--surface2);font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;overflow:hidden}
+.gt tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.gt tbody tr:last-child{border-bottom:none}
+.gt tbody tr:hover{background:#0f1c2e}
+.gt td{padding:7px 8px;vertical-align:top;font-size:11px;overflow:hidden}
+
+.badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:20px;white-space:nowrap}
+.b-cc{color:var(--cc);background:var(--cc-bg)}.b-log{color:var(--log);background:var(--log-bg)}.b-bo{color:var(--bo);background:var(--bo-bg)}
+.sp{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;white-space:nowrap}
+.sp .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sd{color:#52b870;background:var(--done-bg)}.sd .dot{background:#2e7d3e}
+.sg{color:#c47230;background:var(--prog-bg)}.sg .dot{background:#c47230}
+.sn{color:#6a8fad;background:var(--pend-bg)}.sn .dot{background:#3d5166}
+.tt{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--text2)}
+.tnode{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;background:var(--accent-light);color:var(--accent2);padding:1px 6px;border-radius:3px;margin-top:3px;font-weight:500}
+
+.di:focus{border-color:var(--accent);background:var(--surface)}
+.gbw{background:var(--bg);border-radius:20px;height:7px;position:relative;overflow:hidden;width:100%}
+.gbf{height:100%;border-radius:20px;position:absolute;left:0;top:0;transition:width .4s}
+.bd{background:linear-gradient(90deg,#2d7dd2,#1a4a8a)}.bp{background:linear-gradient(90deg,#c47230,#8a5e10)}.bn{background:#1e2d42}
+.bl{font-size:9px;font-family:'DM Mono',monospace;color:var(--text3);margin-top:2px}
+.eb{width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s;font-size:11px;flex-shrink:0}
+.eb:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+
+/* PROS/CONTRAS */
+.pcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.pcc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.pcc:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.pch{padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pcti{font-size:12px;font-weight:600;line-height:1.4;flex:1}
+.pcm{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.pcr{font-size:10px;color:var(--text2)}
+.pctl{padding:9px 14px;border-bottom:1px solid var(--border)}
+.pctlr{display:flex;align-items:center;gap:6px;font-size:10px}
+.pcb{display:grid;grid-template-columns:1fr 1fr;flex:1}
+.pcpros{padding:10px 12px;border-right:1px solid var(--border)}
+.pccons{padding:10px 12px}
+.pcsl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.pcpros .pcsl{color:#52b870}.pccons .pcsl{color:#d94f4f}
+.pctxt{font-size:11px;line-height:1.5}
+.pcpros .pctxt{color:#3d8c52}.pccons .pctxt{color:#a84040}
+.pcft{padding:7px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
+.pcnode{font-size:9px;font-family:'DM Mono',monospace;background:var(--accent-light);color:var(--accent2);padding:2px 7px;border-radius:3px;font-weight:500}
+
+/* MODAL */
+.mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto}
+.mov.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r);padding:2rem;width:640px;max-width:100%;margin:auto;box-shadow:0 25px 70px rgba(0,0,0,.25);position:relative;animation:mi .2s ease}
+@keyframes mi{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.mtitle{font-size:16px;font-weight:600;color:var(--accent);margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
+.msection{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin:1.25rem 0 .75rem;padding-top:1rem;border-top:1px solid var(--border)}
+.msection:first-of-type{margin-top:0;padding-top:0;border-top:none}
+.fg{margin-bottom:1rem}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.fi,.fs,.ft{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s,box-shadow .15s;color-scheme:dark}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(27,61,44,.1)}
+.ft{resize:vertical;min-height:70px;line-height:1.5}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* BULLETS EDITOR */
+.bullets-editor{border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.bullet-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.bullet-row:last-child{border-bottom:none}
+.bullet-row input[type="checkbox"]{width:15px;height:15px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}
+.bullet-inp{flex:1;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);background:transparent;}
+.bullet-date-inp{font-size:11px;font-family:'DM Mono',monospace;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text2);outline:none;width:130px;flex-shrink:0}
+.bullet-date-inp:focus{border-color:var(--accent)}
+.bullet-del{width:22px;height:22px;border-radius:4px;border:none;background:transparent;cursor:pointer;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.bullet-del:hover{background:#fef2f2;color:#b91c1c}
+.add-bullet-btn{width:100%;padding:7px;border:none;background:var(--surface);color:var(--accent2);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.add-bullet-btn:hover{background:var(--accent-light)}
+
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)}
+.btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 20px;border-radius:var(--rs);cursor:pointer;border:1.5px solid transparent;transition:all .15s}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-p:hover{background:#112a1d}
+.btn-s{background:var(--surface);border-color:var(--border);color:var(--text2)}.btn-s:hover{background:var(--surface2)}
+.btn-d{background:#7a1f1f;color:#fff;border-color:#7a1f1f}.btn-d:hover{background:#5c1515}
+.mclose{position:absolute;top:1.25rem;right:1.25rem;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text3);transition:.15s}
+.mclose:hover{background:var(--border);color:var(--text)}
+
+.empty{text-align:center;padding:4rem 2rem;color:var(--text3);grid-column:1/-1}
+footer{text-align:center;font-size:10px;color:var(--text3);padding:2rem;font-family:'DM Mono',monospace}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}.main{padding:1rem}.fr{grid-template-columns:1fr}.fr3{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.pcgrid{grid-template-columns:1fr}.fr3{grid-template-columns:1fr}}
+@media print{.tabs-bar,.toolbar,.mov,.eb,.abtn,.hbtn{display:none!important}.header{position:relative}.panel{display:block!important}}
+
+
+
+
+
+.di{font-size:10px;font-family:'DM Mono',monospace;padding:3px 7px;border:1px solid #2a3d58;border-radius:4px;background:#1a2d45;color:#c8d6e8;outline:none;width:100px;cursor:pointer;transition:border-color .15s}
+.di:hover{border-color:#4a7ec9;background:#1f3554}
+.di:focus{border-color:#4a7ec9;background:#1f3554}
+.di::-webkit-calendar-picker-indicator{filter:invert(0.8) sepia(1) saturate(2) hue-rotate(185deg);cursor:pointer;opacity:0.7}
+
+
+.dcell{position:relative;display:inline-block;min-width:80px}
+.dval{font-size:10px;font-family:'DM Mono',monospace;color:#c8d6e8;display:block;padding:3px 6px;background:#1a2d45;border:1px solid #2a3d58;border-radius:4px;cursor:pointer;white-space:nowrap}
+.dcell:hover .dval{border-color:#4a7ec9;background:#1f3554}
+.di{position:absolute;opacity:0;top:0;left:0;width:100%;height:100%;cursor:pointer;z-index:2;border:none;background:transparent}
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="hlogo">
+    <div class="hicon"><svg viewBox="0 0 16 16" fill="none" width="16" height="16"><path d="M3 8L6.5 11.5L13 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <span class="htitle">Dashboard de Automatización</span>
+  </div>
+  <div class="hright">
+    <span class="lupd" id="lupd">—</span>
+    <button class="hbtn" onclick="window.print()">🖨 Imprimir</button>
+  </div>
+</header>
+
+<nav class="tabs-bar">
+  <div class="tab active" data-tab="gantt">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="4" rx="1.5"/><rect x="3" y="10" width="12" height="4" rx="1.5"/><rect x="3" y="16" width="15" height="4" rx="1.5"/></svg>
+    Gantt de avance
+  </div>
+  <div class="tab" data-tab="pc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg>
+    Pros &amp; Contras
+  </div>
+</nav>
+
+<div class="main">
+  <div class="kpis" id="kpis"></div>
+  <div class="pcard">
+    <div class="pcard-hd"><span class="pcard-lbl">Progreso general de automatización</span><span class="pcard-pct" id="pct-lbl">—</span></div>
+    <div class="pbar"><div class="pbar-done" id="pb-done" style="width:0%"></div><div class="pbar-prog" id="pb-prog" style="left:0%;width:0%"></div></div>
+    <div class="pleg">
+      <div class="pleg-i"><div class="pleg-d" style="background:#2d7dd2"></div>Completado</div>
+      <div class="pleg-i"><div class="pleg-d" style="background:#8a5e10"></div>En proceso</div>
+      <div class="pleg-i"><div class="pleg-d" style="background:#1e2d42"></div>Pendiente</div>
+    </div>
+  </div>
+
+  <!-- GANTT -->
+  <div class="panel active" id="panel-gantt">
+    <div class="toolbar">
+      <div class="sw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="si" id="gs" placeholder="Buscar tarea o responsable…"/></div>
+      <div class="cg">
+        <button class="chip active" data-ga="all">Todas las áreas</button>
+        <button class="chip" data-ga="Contracargos">Contracargos</button>
+        <button class="chip" data-ga="Logistica">Logística</button>
+        <button class="chip" data-ga="Back Office">Back Office</button>
+      </div>
+      <div class="cg">
+        <button class="chip cd active" data-gs2="all">Todos</button>
+        <button class="chip cd" data-gs2="done">Completado</button>
+        <button class="chip cp" data-gs2="prog">En proceso</button>
+        <button class="chip cn" data-gs2="pend">Pendiente</button>
+      </div>
+      <div class="cg">
+        <button class="chip active" data-gp="all">Todas las prioridades</button>
+        <button class="chip" data-gp="1" style="color:var(--p1)">🔴 Crítica</button>
+        <button class="chip" data-gp="2" style="color:var(--p2)">🟠 Alta</button>
+        <button class="chip" data-gp="3" style="color:var(--p3)">🔵 Media</button>
+        <button class="chip" data-gp="4" style="color:var(--p4)">⚪ Baja</button>
+      </div>
+      <span class="rc" id="gc"></span>
+      <button class="abtn" onclick="openAdd()">+ Nueva tarea</button>
+    </div>
+    <div class="gwrap"><div class="gscroll">
+      <table class="gt">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:18%;vertical-align:middle">Tarea</th>
+            <th rowspan="2" style="width:7%;vertical-align:middle">Área</th>
+            <th rowspan="2" style="width:9%;vertical-align:middle">Responsable</th>
+            <th rowspan="2" style="width:6%;vertical-align:middle">Prioridad</th>
+            <th rowspan="2" style="width:7%;vertical-align:middle">Status</th>
+            <th colspan="3" style="text-align:center;background:#dedad2;letter-spacing:.04em;width:21%">📁 Fechas del Proyecto</th>
+            <th rowspan="2" style="width:12%;vertical-align:middle">Avance</th>
+            <th rowspan="2" style="width:18%;vertical-align:middle">Puntos de seguimiento</th>
+            <th rowspan="2" style="width:2%;vertical-align:middle"></th>
+          </tr>
+          <tr>
+            <th style="font-size:9px;background:#e6e1d8">📅 Inicio</th>
+            <th style="font-size:9px;background:#e6e1d8">🏁 Fin</th>
+            <th style="font-size:9px;background:#e6e1d8">🎯 Deadline</th>
+          </tr>
+        </thead>
+        <tbody id="gtbody"></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <!-- PROS/CONTRAS -->
+  <div class="panel" id="panel-pc">
+    <div class="toolbar">
+      <div class="sw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input class="si" id="pcs" placeholder="Buscar tarea, pros, contras o herramienta…"/></div>
+      <div class="cg">
+        <button class="chip active" data-pa="all">Todas las áreas</button>
+        <button class="chip" data-pa="Contracargos">Contracargos</button>
+        <button class="chip" data-pa="Logistica">Logística</button>
+        <button class="chip" data-pa="Back Office">Back Office</button>
+      </div>
+      <div class="cg">
+        <button class="chip cd active" data-ps="all">Todos</button>
+        <button class="chip cd" data-ps="done">Completado</button>
+        <button class="chip cp" data-ps="prog">En proceso</button>
+        <button class="chip cn" data-ps="pend">Pendiente</button>
+      </div>
+      <span class="rc" id="pcc"></span>
+      <button class="abtn" onclick="openAdd()">+ Nueva tarea</button>
+    </div>
+    <div class="pcgrid" id="pcgrid"></div>
+  </div>
+</div>
+
+<footer>Dashboard de Automatización · <span id="yr"></span> · <span id="tft"></span> tareas registradas</footer>
+
+<!-- MODAL -->
+<div class="mov" id="mov">
+  <div class="modal">
+    <button class="mclose" onclick="closeModal()">✕</button>
+    <div class="mtitle" id="mtitle">Editar tarea</div>
+    <input type="hidden" id="ei"/>
+
+    <div class="msection">Información general</div>
+    <div class="fg"><label class="fl">Tarea / Descripción</label><input class="fi" id="f-task" placeholder="Descripción de la tarea"/></div>
+    <div class="fr3">
+      <div class="fg">
+        <label class="fl">Área</label>
+        <select class="fs" id="f-area">
+          <option value="Contracargos">Contracargos</option>
+          <option value="Logistica">Logística</option>
+          <option value="Back Office">Back Office</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Status</label>
+        <select class="fs" id="f-status">
+          <option value="done">✅ Completado</option>
+          <option value="prog">🔄 En proceso</option>
+          <option value="pend">⏳ Pendiente</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Prioridad</label>
+        <select class="fs" id="f-pri">
+          <option value="1">🔴 Crítica</option>
+          <option value="2">🟠 Alta</option>
+          <option value="3">🔵 Media</option>
+          <option value="4">⚪ Baja</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Responsable(s)</label><input class="fi" id="f-resp" placeholder="ej. Marian Rocha, César Estrada"/></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Herramienta anterior</label><input class="fi" id="f-prev" placeholder="ej. Google Sheets + Script"/></div>
+      <div class="fg"><label class="fl">Herramienta actual</label><input class="fi" id="f-curr" placeholder="ej. N8N + Zendesk"/></div>
+    </div>
+
+    <div class="msection">📁 Fechas del proyecto (generales)</div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Estas fechas aplican al proyecto completo, no a puntos individuales.</p>
+    <div class="fr3">
+      <div class="fg"><label class="fl">📅 Inicio del proyecto</label><input class="fi" id="f-start" type="date"/></div>
+      <div class="fg"><label class="fl">🏁 Fin del proyecto</label><input class="fi" id="f-end" type="date"/></div>
+      <div class="fg"><label class="fl">🎯 Deadline del proyecto</label><input class="fi" id="f-deadline" type="date"/></div>
+    </div>
+    <div class="fg"><label class="fl">% de avance (0 – 100)</label><input class="fi" id="f-pct" type="number" min="0" max="100" placeholder="ej. 75"/></div>
+
+    <div class="msection">✅ Puntos de seguimiento / Bullets</div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Cada punto tiene su <strong>propia fecha compromiso</strong> independiente de las fechas del proyecto. Márcalos cuando estén listos.</p>
+    <div class="bullets-editor" id="bullets-editor"></div>
+    <button class="add-bullet-btn" onclick="addBulletRow()">+ Agregar punto</button>
+
+    <div class="msection">Pros, contras y notas</div>
+    <div class="fr">
+      <div class="fg"><label class="fl">✅ Pros / Ventajas</label><textarea class="ft" id="f-pros" placeholder="¿Qué mejoró con la nueva herramienta?"></textarea></div>
+      <div class="fg"><label class="fl">⚠️ Contras / Riesgos</label><textarea class="ft" id="f-cons" placeholder="¿Qué desafíos o riesgos existen?"></textarea></div>
+    </div>
+    <div class="fg"><label class="fl">Notas / Nombre del nodo N8N</label><input class="fi" id="f-notes" placeholder="ej. Mensajero, Destructor de hogares…"/></div>
+
+    <div class="mact">
+      <button class="btn btn-d" id="bdel" onclick="delTask()" style="display:none;margin-right:auto">🗑 Eliminar</button>
+      <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="saveTask()">💾 Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var tasks = [
+  {task:"Notificación de status al cliente",area:"Contracargos",resp:"Marian Rocha",prev:"Google Sheets + Zendesk",curr:"Zendesk + N8N",status:"done",pct:100,pri:"3",pros:"Automatizado, sin intervención manual. Cliente recibe actualizaciones en tiempo real.",cons:"Dependencia total de N8N. Si falla, no hay notificación.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Generación de carta para contracargos MX",area:"Contracargos",resp:"Marian Rocha",prev:"Google Sheets + Zendesk",curr:"Zendesk + N8N",status:"done",pct:100,pri:"2",pros:"Reduce tiempo de llenado manual a segundos. Menor margen de error humano.",cons:"Requiere validación periódica de plantillas regulatorias.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Avisos control interno (Devoluciones, CC pendientes, RPS, abonos)",area:"Contracargos",resp:"Marian Rocha",prev:"GCT + Mail",curr:"GCT + N8N",status:"done",pct:100,pri:"2",pros:"Centraliza todas las alertas automáticas. Elimina revisión manual diaria.",cons:"GCT es dependencia crítica. Caída de GCT detiene todos los avisos.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Zendesk (Macros, fallas, monitoreo)",area:"Contracargos",resp:"Marian Rocha",prev:"Manual",curr:"N8N",status:"done",pct:100,pri:"2",pros:"Monitoreo continuo 24/7 sin intervención. Detección temprana de fallas.",cons:"Alertas pueden saturarse en picos de operación.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Ciclo de atención a CC de fraude",area:"Contracargos",resp:"Marian Rocha",prev:"N/A",curr:"Zendesk + N8N",status:"done",pct:100,pri:"1",pros:"Proceso nuevo bien estructurado con trazabilidad completa del ciclo.",cons:"Sin herramienta previa de referencia para medir mejora.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Second Check de fraude",area:"Contracargos",resp:"Marian Rocha",prev:"N/A",curr:"Zendesk + N8N",status:"done",pct:100,pri:"1",pros:"Doble validación reduce errores de dictaminación y aumenta confianza.",cons:"Agrega latencia entre el primer y segundo check operativo.",notes:"2nd Check Chbk",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Data de CC para Metabase",area:"Contracargos",resp:"Marian Rocha",prev:"GCT + Script",curr:"GCT + Script",status:"done",pct:100,pri:"3",pros:"Script existente funcional y datos confiables en Metabase.",cons:"Aún no migrado a N8N. Requiere ejecución manual periódica.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Cancelación de Claims por cargo reconocido",area:"Contracargos",resp:"Iván García",prev:"N/A",curr:"Zendesk + N8N",status:"done",pct:100,pri:"2",pros:"Cierre automático de casos elimina trabajo manual y reduce backlog.",cons:"Reglas de negocio deben estar muy bien definidas para evitar cierres incorrectos.",notes:"",start:"2024-04-10",end:"2024-06-20",deadline:"",bullets:[]},
+  {task:"Avisos automáticos dictaminación de casos diarios",area:"Contracargos",resp:"Iván García",prev:"N/A",curr:"Google Sheets + N8N",status:"done",pct:100,pri:"3",pros:"Recordatorio diario automático sin esfuerzo operativo.",cons:"Dependiente de Google Sheets. Si falla Sheets, falla el aviso.",notes:"",start:"2024-05-01",end:"2024-06-15",deadline:"",bullets:[]},
+  {task:"Avisos automáticos Prevención de fraude nuevos casos",area:"Contracargos",resp:"Marian Rocha",prev:"N/A",curr:"Google Sheets + N8N",status:"done",pct:100,pri:"1",pros:"Detección proactiva mejora tiempo de respuesta ante fraudes.",cons:"Calidad de alertas depende directamente de la calidad de los datos fuente.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"AI de atención a claims MX/CO/BR (Destructor Imperial)",area:"Contracargos",resp:"Julio Duran / César / Pamela / Marian / Iván",prev:"Google Sheets",curr:"Sheets + N8N + Zendesk",status:"prog",pct:45,pri:"1",pros:"IA operativa multipaís con alta escalabilidad y reducción de carga operativa.",cons:"Múltiples responsables requieren coordinación compleja. Alto riesgo de desalineación.",notes:"Destructor de hogares",start:"2024-06-01",end:"",deadline:"2026-06-30",bullets:[{text:"Definir alcance por país (MX, CO, BR)",done:true,date:"2026-02-01"},{text:"Integración con Zendesk validada",done:true,date:"2026-03-15"},{text:"Pruebas en ambiente staging",done:false,date:"2026-05-30"},{text:"Go-live producción",done:false,date:"2026-06-30"}]},
+  {task:"Reporte trimestral de Volumen a MC",area:"Back Office",resp:"Iván García",prev:"Google Sheets",curr:"Metabase + N8N",status:"done",pct:100,pri:"3",pros:"Reporte se genera y envía automáticamente cada trimestre sin intervención.",cons:"Metabase requiere mantenimiento periódico de dashboards y conexiones.",notes:"",start:"2024-03-01",end:"2024-05-10",deadline:"",bullets:[]},
+  {task:"Actualización de envíos de Logística",area:"Logistica",resp:"Marian Rocha",prev:"Google Sheets + Script",curr:"N8N",status:"done",pct:100,pri:"2",pros:"Elimina script frágil. N8N más robusto, auditable y fácil de mantener.",cons:"Requirió migración cuidadosa de lógica para evitar pérdida de datos.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Update automático reemplazo tarjetas robo/extravío/fraude",area:"Logistica",resp:"Marian Rocha",prev:"Google Sheets + Script",curr:"N8N",status:"done",pct:100,pri:"1",pros:"Proceso más ágil y confiable. Menos errores de actualización de estado.",cons:"Casos edge (datos incompletos) aún pueden requerir intervención manual.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Actualización archivo automático de Pulls",area:"Logistica",resp:"Marian Rocha",prev:"Google Sheets + Script",curr:"N8N",status:"done",pct:100,pri:"2",pros:"Cero intervención manual en la generación del archivo de pulls.",cons:"Dependencia de fuente upstream. Si falla la fuente, falla el archivo.",notes:"",start:"2026-04-15",end:"2026-03-05",deadline:"",bullets:[]},
+  {task:"Construcción automática archivo para carga masiva",area:"Logistica",resp:"Carlos Torres",prev:"Google Sheets + Script",curr:"Google Sheets + N8N",status:"done",pct:100,pri:"3",pros:"Generación automatizada elimina trabajo manual y reduce errores de formato.",cons:"Google Sheets sigue siendo capa intermedia con limitaciones de escala.",notes:"",start:"2024-03-01",end:"2024-04-20",deadline:"",bullets:[]},
+  {task:"Notificaciones Zendesk — nuevos tickets del cliente",area:"Logistica",resp:"Carlos Torres",prev:"N/A",curr:"N8N",status:"done",pct:100,pri:"3",pros:"Notificación inmediata mejora tiempo de primera respuesta al cliente.",cons:"Sin herramienta previa; sin benchmark histórico de mejora.",notes:"Mensajero",start:"2024-03-15",end:"2024-05-01",deadline:"",bullets:[]},
+  {task:"Construcción automática archivo reemplazos robo/extravío/fraude",area:"Logistica",resp:"Carlos Torres",prev:"Google Sheets",curr:"Google Sheets + N8N",status:"done",pct:100,pri:"2",pros:"Automatiza por completo la construcción del archivo de reemplazos.",cons:"Dependencia de Google Sheets; bottleneck en volúmenes altos.",notes:"Reemplazos x robo",start:"2024-04-01",end:"2024-05-20",deadline:"",bullets:[]},
+  {task:"Envío de inventarios automático a Metabase",area:"Logistica",resp:"Carlos Torres",prev:"Google Sheets",curr:"Google Sheets + N8N",status:"done",pct:100,pri:"3",pros:"Inventarios siempre sincronizados en Metabase sin esfuerzo manual.",cons:"Doble capa (Sheets + N8N) agrega complejidad de depuración.",notes:"Inventarios",start:"2024-05-01",end:"2024-06-10",deadline:"",bullets:[]},
+  {task:"Descarga y construcción archivo para reemplazos por Pulls",area:"Logistica",resp:"Carlos Torres",prev:"Google Sheets",curr:"Google Sheets + N8N + Metabase",status:"done",pct:100,pri:"2",pros:"Pipeline completo automatizado con datos en Metabase para análisis.",cons:"Mayor complejidad de mantenimiento con 3 herramientas en el flujo.",notes:"Pulls",start:"2024-05-15",end:"2024-07-01",deadline:"",bullets:[]},
+  {task:"Fase 2: Reemplazos por chargebacks + llamada a ClarOps",area:"Logistica",resp:"Carlos Torres",prev:"ClarOps",curr:"Google Sheets + N8N + ClarOps",status:"prog",pct:30,pri:"1",pros:"Integración directa con ClarOps para confirmar adelantos al cliente.",cons:"Dependencia de API ClarOps. 3 sistemas aumentan puntos de falla potencial.",notes:"Reemplazos x robo",start:"2024-07-01",end:"",deadline:"2026-07-31",bullets:[{text:"Mapear endpoints de ClarOps disponibles",done:true,date:"2026-03-01"},{text:"Diseño del flujo de confirmación",done:false,date:"2026-05-15"},{text:"Pruebas de integración",done:false,date:"2026-07-01"}]},
+  {task:"Actualización de Nuevo Cálculo",area:"Logistica",resp:"Manuel Sánchez",prev:"Google Sheets + Macro + Kublau",curr:"",status:"pend",pct:0,pri:"2",pros:"Potencial de eliminar macros manuales y errores de cálculo operativo.",cons:"Sin herramienta actual definida. Requiere análisis de requerimientos.",notes:"",start:"",end:"",deadline:"",bullets:[]},
+  {task:"Respuesta automática a Tickets",area:"Logistica",resp:"Manuel Sánchez",prev:"Zendesk + Google Sheets",curr:"",status:"pend",pct:0,pri:"3",pros:"Agilizará tiempo de primera respuesta. Reducirá carga del equipo operativo.",cons:"Pendiente de implementación. Sin solución técnica seleccionada.",notes:"",start:"",end:"",deadline:"",bullets:[]},
+  {task:"Validación Automática de Direcciones",area:"Logistica",resp:"Manuel Sánchez",prev:"Google Sheets",curr:"",status:"pend",pct:0,pri:"3",pros:"Reducirá errores de entrega por dirección incorrecta o incompleta.",cons:"Sin solución definida. Requiere integración con API de validación externa.",notes:"",start:"",end:"",deadline:"",bullets:[]},
+  {task:"Migración sistema tickets Q1-CIERRE a WhatsApp",area:"Logistica",resp:"Manuel Sánchez",prev:"Google Sheets",curr:"",status:"pend",pct:0,pri:"2",pros:"Canal más directo con el cliente. Mayor tasa de respuesta esperada.",cons:"Alta complejidad de migración. Riesgo de pérdida de historial de tickets.",notes:"",start:"",end:"",deadline:"",bullets:[]},
+];
+
+var AC={Contracargos:'b-cc',Logistica:'b-log','Back Office':'b-bo'};
+var SM={done:{c:'sd',l:'Completado'},prog:{c:'sg',l:'En proceso'},pend:{c:'sn',l:'Pendiente'}};
+var BC={done:'bd',prog:'bp',pend:'bn'};
+var PRI={1:{c:'pri-1',l:'🔴 Crítica'},2:{c:'pri-2',l:'🟠 Alta'},3:{c:'pri-3',l:'🔵 Media'},4:{c:'pri-4',l:'⚪ Baja'}};
+
+function fdate(d){
+  if(!d)return'—';
+  var p=d.split('-'),mo=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return parseInt(p[2])+' '+mo[parseInt(p[1])-1]+' '+p[0];
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'"');}
+
+function dlBadge(dl){
+  if(!dl)return'<span class="dl dl-none">Sin deadline</span>';
+  var today=new Date(); today.setHours(0,0,0,0);
+  var d=new Date(dl+'T00:00:00');
+  var diff=Math.round((d-today)/(1000*60*60*24));
+  if(diff<0) return'<span class="dl dl-over">⚠ Vencido '+fdate(dl)+'</span>';
+  if(diff<=7) return'<span class="dl dl-warn">⏰ '+fdate(dl)+'</span>';
+  return'<span class="dl dl-ok">🎯 '+fdate(dl)+'</span>';
+}
+
+function filt(a,s,q,p){
+  return tasks.map(function(d,i){return Object.assign({},d,{_i:i});}).filter(function(d){
+    if(a!=='all'&&d.area!==a)return false;
+    if(s!=='all'&&d.status!==s)return false;
+    if(p!=='all'&&String(d.pri||'4')!==p)return false;
+    if(q){var qq=q.toLowerCase();return d.task.toLowerCase().includes(qq)||d.resp.toLowerCase().includes(qq)||(d.curr||'').toLowerCase().includes(qq);}
+    return true;
+  });
+}
+
+function renderKPIs(){
+  var done=tasks.filter(function(d){return d.status==='done';}).length;
+  var prog=tasks.filter(function(d){return d.status==='prog';}).length;
+  var pend=tasks.filter(function(d){return d.status==='pend';}).length;
+  var pct=Math.round(done/tasks.length*100);
+  var areas=[...new Set(tasks.map(function(d){return d.area;}))].length;
+  document.getElementById('kpis').innerHTML=
+    '<div class="kpi k-total"><div class="kpi-lbl">Total tareas</div><div class="kpi-val">'+tasks.length+'</div><div class="kpi-sub">'+areas+' áreas</div></div>'+
+    '<div class="kpi k-done"><div class="kpi-lbl">Completadas</div><div class="kpi-val">'+done+'</div><div class="kpi-sub">'+pct+'% del total</div></div>'+
+    '<div class="kpi k-prog"><div class="kpi-lbl">En proceso</div><div class="kpi-val">'+prog+'</div><div class="kpi-sub">Requieren seguimiento</div></div>'+
+    '<div class="kpi k-pend"><div class="kpi-lbl">Pendientes</div><div class="kpi-val">'+pend+'</div><div class="kpi-sub">Sin herramienta definida</div></div>'+
+    '<div class="kpi"><div class="kpi-lbl">Avance general</div><div class="kpi-val" style="color:var(--done)">'+pct+'%</div><div class="kpi-sub">de tareas completas</div></div>';
+  var dp=done/tasks.length*100,pp=prog/tasks.length*100;
+  document.getElementById('pb-done').style.width=dp+'%';
+  document.getElementById('pb-prog').style.left=dp+'%';
+  document.getElementById('pb-prog').style.width=pp+'%';
+  document.getElementById('pct-lbl').textContent=pct+'% completado';
+  document.getElementById('tft').textContent=tasks.length;
+}
+
+
+
+function makeDateCell(idx, field, val) {
+  var display = val ? fdate(val) : '<em style="color:#3d5166;font-style:normal">—</em>';
+  return '<div class="dcell" data-idx="' + idx + '" data-field="' + field + '">' +
+    '<span class="dval">' + display + '</span>' +
+    '<input type="date" class="di" value="' + (val||'') + '" onchange="handleDateChange(this)">' +
+    '</div>';
+}
+
+function handleDateChange(el) {
+  var wrap = el.parentElement;
+  var idx = parseInt(wrap.dataset.idx);
+  var field = wrap.dataset.field;
+  var val = el.value;
+  ud(idx, field, val);
+  wrap.querySelector('.dval').innerHTML = val ? fdate(val) : '<em style="color:#3d5166;font-style:normal">—</em>';
+}
+
+var gA='all',gS='all',gQ='',gP='all';
+function renderGantt(){
+  var items=filt(gA,gS,gQ,gP);
+  document.getElementById('gc').textContent=items.length+' tareas';
+  var tb=document.getElementById('gtbody');tb.innerHTML='';
+  if(!items.length){tb.innerHTML='<tr><td colspan="11"><div class="empty"><p>Sin resultados.</p></div></td></tr>';return;}
+  items.forEach(function(d){
+    var s=SM[d.status]||SM.pend;
+    var ac=AC[d.area]||'b-cc';
+    var pct=d.pct||0;
+    var bc=BC[d.status]||'bn';
+    var pr=PRI[d.pri||4];
+    var bulletsHtml='';
+    if(d.bullets&&d.bullets.length){
+      bulletsHtml='<ul class="bullets-list">';
+      d.bullets.forEach(function(b,bi){
+        var dateTag=b.date
+          ?'<span style="display:inline-flex;align-items:center;gap:2px;font-size:9px;font-family:\'DM Mono\',monospace;background:'+(b.done?'var(--done-bg)':'var(--prog-bg)')+';color:'+(b.done?'var(--done)':'var(--prog)')+';padding:1px 5px;border-radius:3px;margin-left:4px;flex-shrink:0">📅 '+fdate(b.date)+'</span>'
+          :'<span style="font-size:9px;color:var(--text3);margin-left:4px;flex-shrink:0;font-style:italic">sin fecha</span>';
+        bulletsHtml+='<li style="align-items:flex-start;margin-bottom:5px">'+
+          '<input type="checkbox" class="bullet-cb"'+(b.done?' checked':'')+' onchange="toggleBullet('+d._i+','+bi+',this.checked)" style="margin-top:2px"/>'+
+          '<div style="display:flex;flex-direction:column;gap:2px;flex:1">'+
+            '<span'+(b.done?' style="text-decoration:line-through;color:var(--text3)"':'')+'>'+esc(b.text)+'</span>'+
+            dateTag+
+          '</div>'+
+        '</li>';
+      });
+      bulletsHtml+='</ul>';
+    } else {
+      bulletsHtml='<span style="font-size:10px;color:var(--text3);font-style:italic">Sin puntos de seguimiento</span>';
+    }
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><div style="font-weight:500;font-size:11px;line-height:1.3;word-break:break-word">'+esc(d.task)+'</div>'+(d.notes?'<span class="tnode">⊡ '+esc(d.notes)+'</span>':'')+'</td>'+
+      '<td><span class="badge '+ac+'">'+esc(d.area)+'</span></td>'+
+      '<td style="font-size:10px;color:var(--text2);word-break:break-word">'+esc(d.resp)+'</td>'+
+      '<td><span class="pri '+pr.c+'">'+pr.l+'</span></td>'+
+      '<td><span class="sp '+s.c+'"><span class="dot"></span>'+s.l+'</span></td>'+
+      '<td>'+makeDateCell(d._i,'start',d.start)+'</td>'+
+      '<td>'+makeDateCell(d._i,'end',d.end)+'</td>'+
+      '<td>'+dlBadge(d.deadline)+'</td>'+
+      '<td>'+
+        '<div class="gbw"><div class="gbf '+bc+'" style="width:'+pct+'%"></div></div>'+
+        '<div class="bl">'+pct+'%'+(d.start?' · '+fdate(d.start):'')+'</div>'+
+      '</td>'+
+      '<td>'+bulletsHtml+'</td>'+
+      '<td><button class="eb" onclick="openEdit('+d._i+')">✏</button></td>';
+    tb.appendChild(tr);
+  });
+}
+
+function toggleBullet(taskIdx,bulletIdx,val){
+  if(tasks[taskIdx]&&tasks[taskIdx].bullets&&tasks[taskIdx].bullets[bulletIdx]!==undefined){
+    tasks[taskIdx].bullets[bulletIdx].done=val;
+  }
+}
+
+var pA='all',pS='all',pQ='';
+function renderPC(){
+  var items=filt(pA,pS,pQ,'all');
+  document.getElementById('pcc').textContent=items.length+' tareas';
+  var grid=document.getElementById('pcgrid');grid.innerHTML='';
+  if(!items.length){grid.innerHTML='<div class="empty"><p>Sin resultados.</p></div>';return;}
+  items.forEach(function(d){
+    var s=SM[d.status]||SM.pend;
+    var ac=AC[d.area]||'b-cc';
+    var pr=PRI[d.pri||4];
+    var div=document.createElement('div');div.className='pcc';
+    div.innerHTML=
+      '<div class="pch">'+
+        '<div class="pcti">'+esc(d.task)+'</div>'+
+        '<div style="display:flex;gap:5px;align-items:center;flex-shrink:0">'+
+          '<span class="pri '+pr.c+'" style="font-size:9px">'+pr.l+'</span>'+
+          '<span class="sp '+s.c+'" style="font-size:9px;padding:2px 6px"><span class="dot"></span>'+s.l+'</span>'+
+          '<button class="eb" onclick="openEdit('+d._i+')">✏</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="pcm">'+
+        '<span class="badge '+ac+'">'+esc(d.area)+'</span>'+
+        '<span class="pcr">👤 '+esc(d.resp)+'</span>'+
+        (d.deadline?'<span style="margin-left:auto">'+dlBadge(d.deadline)+'</span>':'')+
+      '</div>'+
+      '<div class="pctl"><div class="pctlr">'+
+        '<span class="tt">'+esc(d.prev||'—')+'</span>'+
+        '<span style="color:var(--text3);font-size:12px">→</span>'+
+        '<span class="tt" style="background:var(--accent-light);border-color:var(--accent2);color:var(--accent2)">'+esc(d.curr||'—')+'</span>'+
+      '</div></div>'+
+      '<div class="pcb">'+
+        '<div class="pcpros"><div class="pcsl">✓ Pros</div><div class="pctxt">'+(d.pros||'<span style="color:var(--text3);font-style:italic">Sin registrar</span>')+'</div></div>'+
+        '<div class="pccons"><div class="pcsl">⚠ Contras</div><div class="pctxt">'+(d.cons||'<span style="color:var(--text3);font-style:italic">Sin registrar</span>')+'</div></div>'+
+      '</div>'+
+      (d.notes?'<div class="pcft"><span class="pcnode">⊡ '+esc(d.notes)+'</span></div>':'');
+    grid.appendChild(div);
+  });
+}
+
+function renderAll(){renderKPIs();renderGantt();renderPC();}
+function ud(i,f,v){tasks[i][f]=v;}
+
+// TABS
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.panel').forEach(function(x){x.classList.remove('active');});
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+// GANTT FILTERS
+document.querySelectorAll('[data-ga]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-ga]').forEach(function(x){x.classList.remove('active');});b.classList.add('active');gA=b.dataset.ga;renderGantt();});});
+document.querySelectorAll('[data-gs2]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-gs2]').forEach(function(x){x.classList.remove('active');});b.classList.add('active');gS=b.dataset.gs2;renderGantt();});});
+document.querySelectorAll('[data-gp]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-gp]').forEach(function(x){x.classList.remove('active');});b.classList.add('active');gP=b.dataset.gp;renderGantt();});});
+document.getElementById('gs').addEventListener('input',function(e){gQ=e.target.value;renderGantt();});
+
+// PC FILTERS
+document.querySelectorAll('[data-pa]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-pa]').forEach(function(x){x.classList.remove('active');});b.classList.add('active');pA=b.dataset.pa;renderPC();});});
+document.querySelectorAll('[data-ps]').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('[data-ps]').forEach(function(x){x.classList.remove('active');});b.classList.add('active');pS=b.dataset.ps;renderPC();});});
+document.getElementById('pcs').addEventListener('input',function(e){pQ=e.target.value;renderPC();});
+
+// BULLETS EDITOR
+function renderBulletsEditor(bullets){
+  var ed=document.getElementById('bullets-editor');
+  ed.innerHTML='';
+  if(bullets&&bullets.length===0){
+    var hint=document.createElement('div');
+    hint.style.cssText='padding:10px 12px;font-size:11px;color:var(--text3);font-style:italic';
+    hint.textContent='Aún no hay puntos. Haz clic en "+ Agregar punto" para empezar.';
+    ed.appendChild(hint);
+    return;
+  }
+  (bullets||[]).forEach(function(b,i){
+    var row=document.createElement('div');row.className='bullet-row';
+    row.style.flexWrap='wrap';
+    row.innerHTML=
+      '<input type="checkbox" '+(b.done?'checked':'')+' onchange="edBullet('+i+',\'done\',this.checked)" title="Marcar como listo"/>'+
+      '<input class="bullet-inp" type="text" value="'+esc(b.text)+'" placeholder="Describe el punto clave o entregable…" oninput="edBullet('+i+',\'text\',this.value)"/>'+
+      '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'+
+        '<span style="font-size:10px;color:var(--text3);white-space:nowrap">📅 Fecha compromiso:</span>'+
+        '<input class="bullet-date-inp" type="date" value="'+(b.date||'')+'" title="Fecha compromiso de este punto (independiente del proyecto)" onchange="edBullet('+i+',\'date\',this.value)"/>'+
+      '</div>'+
+      '<button class="bullet-del" onclick="removeBullet('+i+')" title="Eliminar punto">×</button>';
+    ed.appendChild(row);
+  });
+}
+
+var tmpBullets=[];
+function edBullet(i,f,v){tmpBullets[i][f]=v;}
+function addBulletRow(){tmpBullets.push({text:'',done:false,date:''});renderBulletsEditor(tmpBullets);}
+function removeBullet(i){tmpBullets.splice(i,1);renderBulletsEditor(tmpBullets);}
+
+// MODAL
+function openEdit(i){
+  var d=tasks[i];
+  tmpBullets=JSON.parse(JSON.stringify(d.bullets||[]));
+  document.getElementById('mtitle').textContent='✏ Editar tarea';
+  document.getElementById('ei').value=i;
+  document.getElementById('f-task').value=d.task||'';
+  document.getElementById('f-area').value=d.area||'Contracargos';
+  document.getElementById('f-status').value=d.status||'pend';
+  document.getElementById('f-pri').value=d.pri||'3';
+  document.getElementById('f-resp').value=d.resp||'';
+  document.getElementById('f-prev').value=d.prev||'';
+  document.getElementById('f-curr').value=d.curr||'';
+  document.getElementById('f-start').value=d.start||'';
+  document.getElementById('f-end').value=d.end||'';
+  document.getElementById('f-deadline').value=d.deadline||'';
+  document.getElementById('f-pct').value=d.pct||0;
+  document.getElementById('f-pros').value=d.pros||'';
+  document.getElementById('f-cons').value=d.cons||'';
+  document.getElementById('f-notes').value=d.notes||'';
+  renderBulletsEditor(tmpBullets);
+  document.getElementById('bdel').style.display='inline-flex';
+  document.getElementById('mov').classList.add('open');
+  document.getElementById('mov').scrollTop=0;
+  setTimeout(function(){document.getElementById('f-task').focus();},100);
+}
+
+function openAdd(){
+  tmpBullets=[];
+  document.getElementById('mtitle').textContent='+ Nueva tarea';
+  document.getElementById('ei').value='-1';
+  document.getElementById('f-task').value='';
+  document.getElementById('f-area').value='Contracargos';
+  document.getElementById('f-status').value='pend';
+  document.getElementById('f-pri').value='3';
+  document.getElementById('f-resp').value='';
+  document.getElementById('f-prev').value='';
+  document.getElementById('f-curr').value='';
+  document.getElementById('f-start').value='';
+  document.getElementById('f-end').value='';
+  document.getElementById('f-deadline').value='';
+  document.getElementById('f-pct').value='0';
+  document.getElementById('f-pros').value='';
+  document.getElementById('f-cons').value='';
+  document.getElementById('f-notes').value='';
+  renderBulletsEditor([]);
+  document.getElementById('bdel').style.display='none';
+  document.getElementById('mov').classList.add('open');
+  document.getElementById('mov').scrollTop=0;
+  setTimeout(function(){document.getElementById('f-task').focus();},100);
+}
+
+function closeModal(){document.getElementById('mov').classList.remove('open');}
+document.getElementById('mov').addEventListener('click',function(e){if(e.target===document.getElementById('mov'))closeModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal();});
+
+function saveTask(){
+  var i=parseInt(document.getElementById('ei').value);
+  var taskVal=document.getElementById('f-task').value.trim();
+  if(!taskVal){alert('El nombre de la tarea no puede estar vacío.');document.getElementById('f-task').focus();return;}
+  var entry={
+    task:taskVal,
+    area:document.getElementById('f-area').value,
+    status:document.getElementById('f-status').value,
+    pri:document.getElementById('f-pri').value,
+    resp:document.getElementById('f-resp').value.trim(),
+    prev:document.getElementById('f-prev').value.trim(),
+    curr:document.getElementById('f-curr').value.trim(),
+    start:document.getElementById('f-start').value,
+    end:document.getElementById('f-end').value,
+    deadline:document.getElementById('f-deadline').value,
+    pct:Math.min(100,Math.max(0,parseInt(document.getElementById('f-pct').value)||0)),
+    pros:document.getElementById('f-pros').value.trim(),
+    cons:document.getElementById('f-cons').value.trim(),
+    notes:document.getElementById('f-notes').value.trim(),
+    bullets:JSON.parse(JSON.stringify(tmpBullets.filter(function(b){return b.text.trim()!=='';}))),
+  };
+  if(i===-1)tasks.push(entry);else tasks[i]=entry;
+  document.getElementById('lupd').textContent='Actualizado: '+new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  renderAll();closeModal();
+}
+
+function delTask(){
+  var i=parseInt(document.getElementById('ei').value);
+  if(i>=0&&confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')){tasks.splice(i,1);renderAll();closeModal();}
+}
+
+document.getElementById('yr').textContent=new Date().getFullYear();
+document.getElementById('lupd').textContent='Cargado: '+new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+renderAll();
+</script>
+</body>
+</html>
