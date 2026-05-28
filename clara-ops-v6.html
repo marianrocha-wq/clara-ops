@@ -1504,11 +1504,7 @@ function renderBreach(allBreaches){
             +'<div style="font-family:var(--fh);font-size:14px;font-weight:700;">'+ag.agent+'</div>'
             +'<div style="font-family:var(--fm);font-size:9px;color:var(--tm);">'+ag.country+' · '+ag.cases.length+' tickets fuera de SLA'+(critCount>0?' · '+critCount+' críticos':'')+'</div>'
           +'</div>'
-          +(function(){
-            var abid='abadge_'+ag.agent.replace(/[^a-zA-Z0-9]/g,'');
-            _alertRegistry2[abid]={agent:ag.agent,sla:'',lbl:ag.agent+' · todos'};
-            return '<span id="'+abid+'" onclick="showAlertDetail(this.id)" style="font-family:var(--fm);font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);cursor:pointer;">⚠ '+ag.cases.length+'</span>';
-          })()
++'<span class="breach-agent-badge" data-agent="'+ag.agent+'" style="font-family:var(--fm);font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;background:var(--red-d);border:1px solid var(--red-b);color:var(--red);cursor:pointer;" title="Ver todos los tickets">⚠ '+ag.cases.length+'</span>'
         +'</div>'
         // Column headers
         + THEAD
@@ -1517,6 +1513,14 @@ function renderBreach(allBreaches){
         +(ag.cases.length>100?'<div class="empty-state" style="padding:8px;">Mostrando 100 de '+ag.cases.length+'</div>':'')
       +'</div>';
     }).join('');
+  // Bind click events after innerHTML is set
+  el.querySelectorAll('.breach-agent-badge').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var agent = this.getAttribute('data-agent');
+      var cases = (window._breachData||[]).filter(function(b){return b.agent===agent;});
+      _showBreachModal(agent+' · Todos los breaches', cases.length+' tickets fuera de SLA', cases);
+    });
+  });
 }
 
 // ════════════════════════════════════════
