@@ -1123,6 +1123,12 @@ function renderGeneral(agents, gf, gr, allBreaches){
     alertStrip.querySelector('.alert-strip-title').style.color='var(--green)';
     alertEl.innerHTML='<span style="font-family:var(--fm);font-size:11px;color:var(--green)">Todos los SLAs en cumplimiento</span>';
   } else {
+    var ALERT_SLA_MAP = {
+      'SLA-1 BREACH':'SLA-1 PENDING','SEG 2 BREACH':'SEG 2 DÍA 5',
+      'SEG 3 BREACH':'SEG 3 ABONO','FRAUD VENCIDO':'FRAUDE >3d',
+      'FRAUD · AGENTE DÍA 5':'AGENTE DÍA 5','FRAUD · SUBIDA TARDÍA':'FRAUD SUBIDA TARDIA',
+      'FRAUD NF ABIERTO':'FRAUD NF ABIERTO','DOCS VENCIDOS':'DOCS VENCIDOS','AUTH VENCIDA':'AUTH VENCIDA',
+    };
     alertEl.innerHTML = alertDefs.map(function(a){
         var rid='gal'+a.label.replace(/[^a-zA-Z0-9]/g,'');
         _alertRegistry2[rid]={agent:'__ALL__',sla:ALERT_SLA_MAP[a.label]||'',lbl:a.label};
