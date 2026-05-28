@@ -692,13 +692,13 @@ function processRows(rawRows){
     const isOpen  = !reallyClosed && !isSecondCheck;
     const isDoc   = isDocMacro(macro);
     const isAuth  = isAuthMacro(macro);
-    const isATM   = !isIDNTC && isATMMacro(macro, rulling);
     const esBuenaFe = (r['Fecha_Abono_temporal']||'').toLowerCase().includes('buena fe')
       || (macro||'').toLowerCase().includes('buena_fe_macro');
     const claimTypeLow = claimType.toLowerCase().trim();
     const isIDNTC    = FRAUD_TYPES.has(claimTypeLow)
       || claimTypeLow.includes('do not recognize')
       || claimTypeLow.includes('no reconozco');
+    const isATM   = !isIDNTC && isATMMacro(macro, rulling);
     const isCurrMonth = ticketDate && ticketDate.getMonth()===now.getMonth() && ticketDate.getFullYear()===now.getFullYear();
 
     // ── FRAUDE ────────────────────────────────────────────────
